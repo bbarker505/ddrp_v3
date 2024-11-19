@@ -19,7 +19,7 @@
 #  importing different types of data
 # 6/9/22: Added ability to use E-OBS data for Europe
 
-# DDRP v2
+# DDRP v3
 options(echo = FALSE)
 
 # Load the required packages
@@ -31,7 +31,7 @@ ld_pkgs <- lapply(pkgs, library,
                   lib.loc = "/usr/lib64/R/library/", character.only = TRUE)
 
 # Load collection of functions for this model
-source("/usr/local/dds/DDRP_B1/DDRP_terra/DDRP_v2_funcs.R")
+source("/usr/local/dds/DDRP_B1/DDRP_v3_funcs.R")
 
 # Bring in states feature for summary maps (PNG files)
 # Requires these libraries: "mapdata" and "maptools"
@@ -48,8 +48,9 @@ tic("Total run time")
 ########  Tyson Wepprich for APHIS PPQ and IPM needs ###########################
 ################################################################################
 
-# DDRP v2 is an update from the previous version of DDRP 
-# (v24proDDRP_B1.R = DDRP_v1) that includes:
+# DDRP v3 is an update from the previous version of DDRP (DDRP_v2.R)
+# It uses "terra" instead of "raster" and will eventually include moisture-processing
+# features. As in the previous version of DDRP, it has the following features:
 # 1. The ability to accomodate multiple population cohorts, in which a user-
 #    defined number of cohorts emerges from the overwintering stage at different
 #    times, such that a population in any given area could contain a mix of
@@ -224,7 +225,7 @@ Model_rlogging <- sprintf("%s%s", "./", "/Logs_metadata/Model_rlogging.txt")
 
 # Make header for logging file
 cat(paste0(rep("#", 36), collapse = ""), "\n", 
-    "### Log file for DDRP v2 ###\n", 
+    "### Log file for DDRP v3 ###\n", 
     paste0(rep("#", 36), collapse = ""), "\n\n", sep = "", 
     file = Model_rlogging)
 
@@ -439,7 +440,7 @@ cat("\nMETADATA: creating metadata file for all inputs used in model\n")
 # Create the metadata file
 setwd(output_dir)
 metadata <- sprintf("%s%s", "./", "/Logs_metadata/metadata.txt")
-cat("### Metadata for DDRP v2 ###\n", file = metadata)
+cat("### Metadata for DDRP v3 ###\n", file = metadata)
 
 # Document run date and time
 cat("\nRun date and time:", strftime(Sys.time(), format = "%m/%d/%Y %H:%M"),

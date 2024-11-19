@@ -1,6 +1,6 @@
 # Functions used for DDRP_v2.R -----
 # 
-# This file must accompany DDRP_v2.R; it contains the majority of functions 
+# This file must accompany DDRP_v3.R; it contains the majority of functions 
 # needed to run the program.
 # 
 # Log of recent edits (2022-current) -----
