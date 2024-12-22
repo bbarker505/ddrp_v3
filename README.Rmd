@@ -12,13 +12,13 @@ output: md_document
 
 Invasive pests present a significant threat to agricultural production in the United States, yet decision support tools that can accurately predict where and when to expect pests have not yet been fully developed and utilized. Our spatial modeling platform known as DDRP (Degree-Days, Risk, and Phenological event mapping) was designed to provide regularly updated forecasts of the potential distribution (risk of establishment) and timing of seasonal activities (phenology) of pests [(Barker et al. 2020, ](https://doi.org/10.1371/journal.pone.0244005)[Barker et al. 2023)](https://doi.org/10.3389/finsc.2023.1239173). An overview of the DDRP modeling process is below (Fig. 1).
 
-![Fig. 1](https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true)
+![Fig. 1. DDRP modeling overview](https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true)
 
 # Species models
 
 Currently we are using DDRP to produce regularly updated (every 2-3 days) forecasts for 18 high-priority invasive insect species, available at [USPest.org](http://uspest.org/CAPS)  (Fig. 2). The platform has also been adapted to predict the phenology and voltinism (number of generations per year) of three biological control insects that have photoperiod-cued diapause [(Grevstad et al. 2022)](https://doi.org/10.1002/eap.2557), also available at [USPest.org](http://uspest.org/dd/dodmaps). We are developing moisture processing features in DDRP to improve the modeling of moisture-sensitive organisms such as plant pathogens and weeds. 
 
-![Fig. 2](https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true)
+![Fig. 2. DDRP models developed to date.](https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true)
 
 # Inputs and outputs
 
@@ -48,11 +48,11 @@ Our development of DDRP has strived to achieve a parsimonious balance of both mo
 
 The movie below shows DDRP outputs of the emergence of overwintered adults of emerald ash borer over the course of 2021 (Fig. 3). Areas where heat or cold stress has exceeded the stress limits for the species are predicted to be excluded from the potential distribution.
 
-![Fig. 3](https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true)
+![Fig. 3. DDRP forecasts for emerald ash borer for 2021](https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true)
 
 Another way to look at this (mostly) same information is with a phenological event map, below (Fig. 4).
 
-![Fig. 4](https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE)
+![Fig. 4. A phenological event map for emerald ash borer for 2021](https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE)
 
 # Acknowledgements
 

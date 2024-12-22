@@ -17,8 +17,9 @@ the DDRP modeling process is below (Fig. 1).
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true"
-alt="Fig. 1" />
-<figcaption aria-hidden="true">Fig. 1</figcaption>
+alt="Fig. 1. DDRP modeling overview" />
+<figcaption aria-hidden="true">Fig. 1. DDRP modeling
+overview</figcaption>
 </figure>
 
 # Species models
@@ -37,8 +38,9 @@ moisture-sensitive organisms such as plant pathogens and weeds.
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true"
-alt="Fig. 2" />
-<figcaption aria-hidden="true">Fig. 2</figcaption>
+alt="Fig. 2. DDRP models developed to date." />
+<figcaption aria-hidden="true">Fig. 2. DDRP models developed to
+date.</figcaption>
 </figure>
 
 # Inputs and outputs
@@ -124,8 +126,9 @@ are predicted to be excluded from the potential distribution.
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
-alt="Fig. 3" />
-<figcaption aria-hidden="true">Fig. 3</figcaption>
+alt="Fig. 3. DDRP forecasts for emerald ash borer for 2021" />
+<figcaption aria-hidden="true">Fig. 3. DDRP forecasts for emerald ash
+borer for 2021</figcaption>
 </figure>
 
 Another way to look at this (mostly) same information is with a
@@ -134,8 +137,9 @@ phenological event map, below (Fig. 4).
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
-alt="Fig. 4" />
-<figcaption aria-hidden="true">Fig. 4</figcaption>
+alt="Fig. 4. A phenological event map for emerald ash borer for 2021" />
+<figcaption aria-hidden="true">Fig. 4. A phenological event map for
+emerald ash borer for 2021</figcaption>
 </figure>
 
 # Acknowledgements
