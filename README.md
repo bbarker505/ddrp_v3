@@ -11,47 +11,49 @@ Risk, and Phenological event mapping) was designed to provide regularly
 updated forecasts of the potential distribution (risk of establishment)
 and timing of seasonal activities (phenology) of pests [(Barker et
 al. 2020,](https://doi.org/10.1371/journal.pone.0244005)[Barker et
-al. 2023)](https://doi.org/10.3389/finsc.2023.1239173).
+al. 2023)](https://doi.org/10.3389/finsc.2023.1239173). An overview of
+the DDRP modeling process is below (Fig. 1).
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true"
-alt="Overview" />
-<figcaption aria-hidden="true">Overview</figcaption>
+alt="Fig. 1" />
+<figcaption aria-hidden="true">Fig. 1</figcaption>
 </figure>
 
 # Species models
 
 Currently we are using DDRP to produce regularly updated (every 2-3
 days) forecasts for 18 high-priority invasive insect species, available
-at [USPest.org](http://uspest.org/CAPS). The platform has also been
-adapted to predict the phenology and voltinism (number of generations
-per year) of three biological control insects that have photoperiod-cued
-diapause [(Grevstad et al. 2022)](https://doi.org/10.1002/eap.2557),
-also available at [USPest.org](http://uspest.org/dd/dodmaps). We are
-developing moisture processing features in DDRP to improve the modeling
-of moisture-sensitive organisms such as plant pathogens and weeds.
+at [USPest.org](http://uspest.org/CAPS) (Fig. 2). The platform has also
+been adapted to predict the phenology and voltinism (number of
+generations per year) of three biological control insects that have
+photoperiod-cued diapause [(Grevstad et
+al. 2022)](https://doi.org/10.1002/eap.2557), also available at
+[USPest.org](http://uspest.org/dd/dodmaps). We are developing moisture
+processing features in DDRP to improve the modeling of
+moisture-sensitive organisms such as plant pathogens and weeds.
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true"
-alt="Models" />
-<figcaption aria-hidden="true">Models</figcaption>
+alt="Fig. 2" />
+<figcaption aria-hidden="true">Fig. 2</figcaption>
 </figure>
 
 # Inputs and outputs
 
 DDRP uses a process-based (mechanistic) approach to model
 temperature-dependent development, phenology, and climate suitability of
-target species. The platform requires gridded daily minimum and maximum
-temperature data, and information on the temperature requirements for
-development and survival of a species. We typically run DDRP using
-current and forecast climate data for the conterminous U.S. to provide
-real-time decision support for a species; however, the platform accepts
-data for any time frame or region, such as data for past years or for
-other countries. Model products include maps of the predicted potential
-distribution (climate-based risk of establishment), number of
-generations, and dates of phenological events. The potential
+target species (Fig. 1). The platform requires gridded daily minimum and
+maximum temperature data, and information on the temperature
+requirements for development and survival of a species. We typically run
+DDRP using current and forecast climate data for the conterminous U.S.
+to provide real-time decision support for a species; however, the
+platform accepts data for any time frame or region, such as data for
+past years or for other countries. Model products include maps of the
+predicted potential distribution (climate-based risk of establishment),
+number of generations, and dates of phenological events. The potential
 distribution is represented by areas where cold and heat stress
 accumulations have not exceeded the stress limits of a species.
 
@@ -115,25 +117,25 @@ support rather than more complex research-only models
 # Example outputs
 
 The movie below shows DDRP outputs of the emergence of overwintered
-adults of emerald ash borer over the course of 2021. Areas where heat or
-cold stress has exceeded the stress limits for the species are predicted
-to be excluded from the potential distribution.
+adults of emerald ash borer over the course of 2021 (Fig. 3). Areas
+where heat or cold stress has exceeded the stress limits for the species
+are predicted to be excluded from the potential distribution.
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
-alt="Movie" />
-<figcaption aria-hidden="true">Movie</figcaption>
+alt="Fig. 3" />
+<figcaption aria-hidden="true">Fig. 3</figcaption>
 </figure>
 
 Another way to look at this (mostly) same information is with a
-phenological event map, below.
+phenological event map, below (Fig. 4).
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
-alt="PEM" />
-<figcaption aria-hidden="true">PEM</figcaption>
+alt="Fig. 4" />
+<figcaption aria-hidden="true">Fig. 4</figcaption>
 </figure>
 
 # Acknowledgements
