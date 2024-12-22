@@ -11,21 +11,23 @@ Risk, and Phenological event mapping) was designed to provide regularly
 updated forecasts of the potential distribution (risk of establishment)
 and timing of seasonal activities (phenology) of pests [(Barker et
 al. 2020,](https://doi.org/10.1371/journal.pone.0244005)[Barker et
-al. 2023)](https://doi.org/10.3389/finsc.2023.1239173). Currently we are
-using DDRP to produce regularly updated (every 2-3 days) forecasts for
-17 high-priority invasive insect species, available at
-[USPest.org](http://uspest.org/CAPS). The program has also been adapted
-to predict the phenology and voltinism (number of generations per year)
-of three biological control insects that have photoperiod-cued diapause
-[(Grevstad et al. in 2022)](https://doi.org/10.1002/eap.2557), also
-available at [USPest.org](http://uspest.org/dd/dodmaps).
+al. 2023)](https://doi.org/10.3389/finsc.2023.1239173).
 
-<figure>
-<img
-src="https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true"
-alt="Model overview" />
-<figcaption aria-hidden="true">Model overview</figcaption>
-</figure>
+!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true>)
+
+# Species models
+
+Currently we are using DDRP to produce regularly updated (every 2-3
+days) forecasts for 18 high-priority invasive insect species, available
+at [USPest.org](http://uspest.org/CAPS). The platform has also been
+adapted to predict the phenology and voltinism (number of generations
+per year) of three biological control insects that have photoperiod-cued
+diapause [(Grevstad et al. 2022)](https://doi.org/10.1002/eap.2557),
+also available at [USPest.org](http://uspest.org/dd/dodmaps). We are
+developing moisture processing features in DDRP to improve the modeling
+of moisture-sensitive organisms such as plant pathogens and weeds.
+
+!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true>)
 
 # Inputs and outputs
 
@@ -107,22 +109,12 @@ adults of emerald ash borer over the course of 2021. Areas where heat or
 cold stress has exceeded the stress limits for the species are predicted
 to be excluded from the potential distribution.
 
-<figure>
-<img
-src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
-alt="Movie" />
-<figcaption aria-hidden="true">Movie</figcaption>
-</figure>
+!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true>)
 
 Another way to look at this (mostly) same information is with a
 phenological event map, below.
 
-<figure>
-<img
-src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
-alt="PEM" />
-<figcaption aria-hidden="true">PEM</figcaption>
-</figure>
+!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE>)
 
 # Acknowledgements
 

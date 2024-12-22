@@ -27,11 +27,10 @@ pkgs <- c("doParallel", "dplyr", "foreach", "ggplot2", "ggthemes",
           "lubridate", "maps", "mgsub", "optparse", "parallel",
           "purrr", "RColorBrewer", "readr", "terra",
           "stringr", "tidyr", "tictoc", "tools", "toOrdinal", "sf")
-ld_pkgs <- lapply(pkgs, library, 
-                  lib.loc = "/usr/lib64/R/library/", character.only = TRUE)
+ld_pkgs <- lapply(pkgs, library, character.only = TRUE)
 
 # Load collection of functions for this model
-source("/usr/local/dds/DDRP_B1/DDRP_v3_funcs.R")
+source("C:/Users/barkebri/Documents/R/R_scripts/DDRP/DDRP_v3/Windows/DDRP_v3_funcs.R")
 
 # Bring in states feature for summary maps (PNG files)
 # Requires these libraries: "mapdata" and "maptools"
@@ -140,18 +139,18 @@ if (!is.na(opts[1])) {
   #### * Default values for params, if not provided in command line ####
   spp           <- "SLF" # Default species to use
   forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
-  start_year    <- "2024" # Year to use
+  start_year    <- "1990_daily_30yr" # Year to use
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
-  region_param  <- "WEST" # Region 
+  region_param  <- "PA" # Region 
   exclusions_stressunits    <- 1 # Turn on/off climate stress unit exclusions
   pems          <- 1 # Turn on/off pest event maps
   mapA          <- 1 # Make maps for adult stage
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "LBAM_test" # Output dir
+  out_dir       <- "SLF_test" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -160,11 +159,11 @@ if (!is.na(opts[1])) {
 # (2). DIRECTORY INIT ------
 
 #### * Param inputs - species params; thresholds, weather, etc. ####
-params_dir <- "/usr/local/dds/DDRP_B1/spp_params/"
+params_dir <- "C:/Users/barkebri/Documents/Species/spp_params/Cohorts/"
 
 #### * Weather inputs and outputs - climate data w/subdirs 4-digit year ####
 if (forecast_data == "PRISM") {
-  base_dir <- "/data/PRISM/"
+  base_dir <- "C:/Users/barkebri/Documents/GIS/Data/PRISM/"
   # TO DO: add command line parameter for different GCMs
 } else if (forecast_data == "MACAV2") {
   gcm <- "GFDL-ESM2M" # TO DO: command line parameter
@@ -183,7 +182,7 @@ cat("\nWORKING DIR: ", forecast_dir, "\n")
 # try to analyze previously processed results. 
 
 #output_dir <- paste0("/home/httpd/html/CAPS/", spp, "_cohorts")
-output_dir <- paste0("/usr/local/dds/DDRP_B1/DDRP_results/", out_dir)
+output_dir <- paste0("C:/Users/barkebri/Documents/R/R_scripts/DDRP/DDRP_v3/Windows/DDRP_results/", out_dir)
 
 # If the directory already exists, then a backup directory will be created that
 # contains the old run files. Old backup directories will be removed if present.
