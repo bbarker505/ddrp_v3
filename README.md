@@ -126,9 +126,9 @@ are predicted to be excluded from the potential distribution.
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
-alt="Fig. 3. DDRP forecasts for emerald ash borer for 2021" />
+alt="Fig. 3. DDRP forecasts for emerald ash borer for 2021." />
 <figcaption aria-hidden="true">Fig. 3. DDRP forecasts for emerald ash
-borer for 2021</figcaption>
+borer for 2021.</figcaption>
 </figure>
 
 Another way to look at this (mostly) same information is with a
@@ -137,9 +137,9 @@ phenological event map, below (Fig. 4).
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
-alt="Fig. 4. A phenological event map for emerald ash borer for 2021" />
+alt="Fig. 4. A phenological event map for emerald ash borer for 2021." />
 <figcaption aria-hidden="true">Fig. 4. A phenological event map for
-emerald ash borer for 2021</figcaption>
+emerald ash borer for 2021.</figcaption>
 </figure>
 
 # Acknowledgements
