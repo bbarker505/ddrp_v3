@@ -13,7 +13,12 @@ and timing of seasonal activities (phenology) of pests [(Barker et
 al. 2020,](https://doi.org/10.1371/journal.pone.0244005)[Barker et
 al. 2023)](https://doi.org/10.3389/finsc.2023.1239173).
 
-!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true>)
+<figure>
+<img
+src="https://github.com/bbarker505/ddrp_v2/blob/master/images/model_overview.png?raw=true"
+alt="Overview" />
+<figcaption aria-hidden="true">Overview</figcaption>
+</figure>
 
 # Species models
 
@@ -27,7 +32,12 @@ also available at [USPest.org](http://uspest.org/dd/dodmaps). We are
 developing moisture processing features in DDRP to improve the modeling
 of moisture-sensitive organisms such as plant pathogens and weeds.
 
-!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true>)
+<figure>
+<img
+src="https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true"
+alt="Models" />
+<figcaption aria-hidden="true">Models</figcaption>
+</figure>
 
 # Inputs and outputs
 
@@ -109,12 +119,22 @@ adults of emerald ash borer over the course of 2021. Areas where heat or
 cold stress has exceeded the stress limits for the species are predicted
 to be excluded from the potential distribution.
 
-!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true>)
+<figure>
+<img
+src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
+alt="Movie" />
+<figcaption aria-hidden="true">Movie</figcaption>
+</figure>
 
 Another way to look at this (mostly) same information is with a
 phenological event map, below.
 
-!(<https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE>)
+<figure>
+<img
+src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
+alt="PEM" />
+<figcaption aria-hidden="true">PEM</figcaption>
+</figure>
 
 # Acknowledgements
 
