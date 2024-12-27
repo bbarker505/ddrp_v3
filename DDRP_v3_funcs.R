@@ -3,21 +3,9 @@
 # This file must accompany DDRP_v3.R; it contains the majority of functions 
 # needed to run the program.
 # 
-# Log of recent edits (2022-current) -----
+# Log of recent edits (2024-current) -----
+# 12/27/24: Added code to remove unused PEMs for spp. w/ obligate diapause 
 # 11/4/24: Finished replacing all "raster" functions with "terra" functions
-# 10/2/23: Clarified that "obligate_diapause" parameter cannot be in a parameter
-# file unless the species actually does have obligate diapause. This should maybe
-# be changed (i.e., have it all parameter files) but would require changing all 
-# species parameter files created to date (except for EAB)
-# 1/24/23: Modified "Base_map" function so that maps for North America included
-# both state and world boundaries in image file (PNG) outputs
-# 11/10/22: Add formula to compute a lognormal distribution and skewed normal
-#   distribution of emergence times. Also fixed mistake in PEM colors due to 
-#   incorrect ordering of factors.
-# 9/29/22: Changed PEM color palettes (8/25 + 9/29) & fixed bug w/ ordering of key
-# 7/2/22: Edit CombineMaps function to increase tolerance in merge raster function
-# 6/29/22: Added features for processing and mapping E-OBS and CDAT data
-# 3/18/22: Fixed bug in code to plot pest event maps
 #
 # Issues to resolve: boundary of CONUS doesn't line up completely with raster
 # May not be an issue, but the color key in PEMs is really convoluted - should
@@ -553,7 +541,7 @@ DailyLoop <- function(cohort, tile_num, template) {
             # file - this is for DDRP v2)
             PEMa0 <- Cond(PEMa0 == 0 & NumGen == 0 & (DDaccum >= OWEventDD), 
                           d * (Lifestage == which(stgorder == "OA")), PEMa0) 
-            } else if (owstage %in% c("OL", "OP")) {
+            } else if (owstage %in% c("OE", "OL", "OP")) {
             # If owstage = larvae or pupae, then adults of the OW gen will 
             # have to go through full development 
             PEMa0 <- Cond(PEMa0 == 0 & NumGen == 0 & (DDaccum >= adultEventDD), 
@@ -765,6 +753,20 @@ DailyLoop <- function(cohort, tile_num, template) {
   # If Pest Event Maps are specified (pems = 1), then convert PEM matrices 
   # to rasters and save them
   if (pems) {
+    
+    # Remove unused PEMs for species with obligate diapause (to avoid saving them)
+    # There might be a better way to deal with this above when creating PEMs
+    if (exists("obligate_diapause")) {
+      if (obligate_diapause == 1) {
+        if (owstage == "OE") {
+          rm(list = ls()[grep("PEMl1|PEMp1|PEMa1", ls())])
+        } else if (owstage == "OL") {
+          rm(list = ls()[grep("PEMp1|PEMa1", ls())])
+        } else if (owstage == "OP")
+          rm(list = ls()[grep("PEMa1", ls())])
+      } # All first gen pems exist for species with overwintering adults
+    }
+    
     pem_list <- mget(ls(pattern = "PEMe|PEMl|PEMp|PEMa"))
     # Convert each matrix in the list to a raster and save it
     for (i in 1:length(pem_list)) {

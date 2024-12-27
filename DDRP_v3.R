@@ -2,35 +2,22 @@
 #.libPaths("/usr/lib64/R/library/")
 #
 # Log of recent edits (2022-current)
-# 
 # 11/16/24: Fixed bug in Adult by Gen code that caused crashes on certain servers
 # 11/5/24: Finished converting code to replace "raster" with "terra" functions
-# 11/29/23: Fixed bug in PEM code block that sometimes result in errors when
-# cohorts were missing due the event not occuring in that cohort ("calc" function).
-# 10/3/23: Fixed bug that prevented climate data from directories with non-numeric
-# characters from being imported.
-# 11/2/22: Add ability to compute a lognormal distribution and skewed normal 
-# distribution of emergence times; changed caculation of average date of pest 
-# event to a weighted average to better account for cohort distributions; 
-# edited the "cohort_chunks" list object to avoid errors when applying >7 cohorts.
-# 9/21/22: Bug fix in Adult by Gen maps when using older raster and/or sp packages
-# 8/26/22: Output a raster for StageCount for present day, new PEM colors
-# 6/22/22: Added ability to use CDAT data for China; simplified code for 
-#  importing different types of data
-# 6/9/22: Added ability to use E-OBS data for Europe
 
-# DDRP v3
+# DDRP v
 options(echo = FALSE)
 
 # Load the required packages
 pkgs <- c("doParallel", "dplyr", "foreach", "ggplot2", "ggthemes", 
           "lubridate", "maps", "mgsub", "optparse", "parallel",
-          "purrr", "RColorBrewer", "readr", "terra",
-          "stringr", "tidyr", "tictoc", "tools", "toOrdinal", "sf")
-ld_pkgs <- lapply(pkgs, library, character.only = TRUE)
+          "purrr", "RColorBrewer", "readr", "sf", "terra",
+          "stringr", "tidyr", "tictoc", "tools", "toOrdinal")
+ld_pkgs <- lapply(pkgs, library, 
+                  lib.loc = "/usr/lib64/R/library/", character.only = TRUE)
 
 # Load collection of functions for this model
-source("C:/Users/barkebri/Documents/R/R_scripts/DDRP/DDRP_v3/Windows/DDRP_v3_funcs.R")
+source("/usr/local/dds/DDRP_B1/DDRP_v3_funcs.R")
 
 # Bring in states feature for summary maps (PNG files)
 # Requires these libraries: "mapdata" and "maptools"
@@ -139,18 +126,18 @@ if (!is.na(opts[1])) {
   #### * Default values for params, if not provided in command line ####
   spp           <- "SLF" # Default species to use
   forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
-  start_year    <- "1990_daily_30yr" # Year to use
+  start_year    <- "2024" # Year to use
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
-  region_param  <- "PA" # Region 
+  region_param  <- "OR" # Region 
   exclusions_stressunits    <- 1 # Turn on/off climate stress unit exclusions
   pems          <- 1 # Turn on/off pest event maps
   mapA          <- 1 # Make maps for adult stage
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "SLF_test" # Output dir
+  out_dir       <- "SLF_v3" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -159,11 +146,11 @@ if (!is.na(opts[1])) {
 # (2). DIRECTORY INIT ------
 
 #### * Param inputs - species params; thresholds, weather, etc. ####
-params_dir <- "C:/Users/barkebri/Documents/Species/spp_params/Cohorts/"
+params_dir <- "/usr/local/dds/DDRP_B1/spp_params/"
 
 #### * Weather inputs and outputs - climate data w/subdirs 4-digit year ####
 if (forecast_data == "PRISM") {
-  base_dir <- "C:/Users/barkebri/Documents/GIS/Data/PRISM/"
+  base_dir <- "/data/PRISM/"
   # TO DO: add command line parameter for different GCMs
 } else if (forecast_data == "MACAV2") {
   gcm <- "GFDL-ESM2M" # TO DO: command line parameter
@@ -182,7 +169,7 @@ cat("\nWORKING DIR: ", forecast_dir, "\n")
 # try to analyze previously processed results. 
 
 #output_dir <- paste0("/home/httpd/html/CAPS/", spp, "_cohorts")
-output_dir <- paste0("C:/Users/barkebri/Documents/R/R_scripts/DDRP/DDRP_v3/Windows/DDRP_results/", out_dir)
+output_dir <- paste0("/usr/local/dds/DDRP_B1/DDRP_results/", out_dir)
 
 # If the directory already exists, then a backup directory will be created that
 # contains the old run files. Old backup directories will be removed if present.
@@ -685,7 +672,7 @@ ncores <- detectCores()
 # the "region_param" and "ncohort" parameters, so the server doesn't become
 # overloaded. Template is split into 4 tiles if CONUS/EAST/N_AMERICA/EUROPE/CHINA.
 # TO DO: matrices may speed things up less now that "terra" has replaced "raster?" 
-RegCluster(round(ncores/4))
+RegCluster(round(ncores/8))
 
 if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
   
@@ -1055,7 +1042,7 @@ dats_list <- split(dats2, ceiling(seq_along(dats2)/(length(dats2)/4)))
 # exclusion, heat stress unit accumulation, heat stress exclusion, and all 
 # stress exclusion
 
-RegCluster(round(ncores/6))
+RegCluster(round(ncores/10))
 
 #for (dat in dats_list) {
 #  for (d in dat) {
@@ -1208,7 +1195,7 @@ if (exclusions_stressunits) {
 # Generate summary maps for Stage Count results
 # TO DO: see about making this step faster. Increasing parallel processing
 # here (e.g. for going through the StageCt_lst) overloads server too much.
-RegCluster(round(ncores/3))
+RegCluster(round(ncores/10))
 
 for (i in 1:length(StageCt_lst)) {
   
@@ -1339,7 +1326,6 @@ if (!pems & !exclusions_stressunits) {
 # Process and plot the Pest Event Maps (PEMs) 
 # Currently, the earliest date across cohorts and average data across cohorts 
 # is calculated for the last day (last day is last element of "sublist" vector)
-
 if (pems) {
   # Get all PEM files, split them by type (e.g., PEMe1, PEMe2) and stage 
   # (e.g., "egg", "adult")
@@ -1732,7 +1718,7 @@ if (exclusions_stressunits) {
 NumGen_fls <- list.files(pattern = glob2rx(paste0("NumGen_", "*tif$"))) 
 maxgens <- max(values(rast(NumGen_fls)), na.rm = TRUE)
 
-RegCluster(round(ncores/12))
+RegCluster(round(ncores/8))
 
 foreach(i = 0:maxgens, .packages = pkgs) %:%
   foreach(j = 1:length(NumGen_fls), .packages = pkgs) %dopar% {
@@ -1900,7 +1886,7 @@ if (exclusions_stressunits) {
     list("NumGenExcl1_all_merged.tif", "NumGenExcl2_all_merged.tif"))
 }
 
-RegCluster(round(ncores/6))
+RegCluster(round(ncores/4))
 
 #for (i in 1:length(NumGen_mrgd_fls)) {
 foreach(i = 1:length(NumGen_mrgd_fls), .packages = pkgs,.inorder = TRUE) %:%
@@ -2239,7 +2225,7 @@ if (exclusions_stressunits) {
 # Subset NumGen raster by generation and then mask out areas in weighted
 # Adult rasters that do not belong to that generation 
 # Result will be a list of rasters for each generation of adults
-RegCluster(round(ncores/6))
+RegCluster(round(ncores/10))
 
 # Run the overlay analysis and save results as multi-layered rasters
 mskGenAdult <- foreach(gen = 0:maxgens, 
@@ -2342,9 +2328,6 @@ Adult_byGen_sum_maps <- foreach(j = 1:length(Adult_byGen_fls),
         # more than 1 cell
         if (nrow(freq) >= 1 & any(freq$count > 1)) {
           r_sub <- c(r_sub, r)
-          # Not sure if this is needed....
-        # } else if (nrow(freq) > 1 & any(freq$count > 1)) { 
-        #   r_sub <- c(r_sub, r)
         }
       }
     }
