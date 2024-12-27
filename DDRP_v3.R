@@ -792,13 +792,6 @@ tryCatch(
          }, mc.cores = mc.cores)
         }, mc.cores = mc.cores)
 
-      # system.time(
-      # foreach(cohort = cohort_vec, .packages = pkgs, .inorder=FALSE) %:%  
-      # foreach(tile_num = 1:4, .packages = pkgs, .inorder = FALSE) %dopar% {
-      #         tile <- template_w[[tile_num]]
-      #         DailyLoop(cohort, tile_num, tile)
-      #       }
-      #     )
     }
 
     stopCluster(cl)
