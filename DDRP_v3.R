@@ -588,6 +588,7 @@ if (out_option == 1) {
 } else if (out_option == 2) {
   sample_freq <- 14  # Biweekly maps
 } else if (out_option == 3) {
+  sample_freq <- 10 # Dekad maps
 } else if (out_option == 4) {
   sample_freq <- 7  # Weekly maps
 } else if (out_option == 5) {
