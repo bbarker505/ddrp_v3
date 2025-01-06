@@ -926,7 +926,7 @@ ExtractBestPRISM <- function(files, forecast_data, keep_leap) {
                             ifelse(quality == "10yr", 4, 
                             ifelse(quality == "30yr", 5, 
                             ifelse(quality == "nmme", 6, NA)))))))
-  } else if (dat == "NMME") {
+  } else if (forecast_data == "NMME") {
     df <- mutate(df, rank = ifelse(quality == "stab", 1, 
                             ifelse(quality == "prov", 2, 
                             ifelse(quality == "earl", 3, 
