@@ -5,7 +5,7 @@
 # 11/16/24: Fixed bug in Adult by Gen code that caused crashes on certain servers
 # 11/5/24: Finished converting code to replace "raster" with "terra" functions
 
-# DDRP v
+# DDRP v3
 options(echo = FALSE)
 
 # Load the required packages
@@ -126,7 +126,7 @@ if (!is.na(opts[1])) {
   #### * Default values for params, if not provided in command line ####
   spp           <- "SLF" # Default species to use
   forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
-  start_year    <- "2024" # Year to use
+  start_year    <- "2023" # Year to use
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
@@ -137,7 +137,7 @@ if (!is.na(opts[1])) {
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "SLF_v3" # Output dir
+  out_dir       <- "SLF_2023_v3.2" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -981,20 +981,20 @@ if (asp >= 1.7) {
 }
 
 # Theme to use for plots
-mytheme <- theme(legend.text = element_text(size = rel(1)), 
-  legend.title = element_text(size = rel(1.2), face = "bold"),
-   legend.background=element_rect(fill="white", colour=NA),
-  legend.key=element_rect(colour="white"),
+mytheme <- theme(
+  legend.text = element_text(size = rel(1)),
+  legend.title = element_text(size = rel(1.2), family = "arial", face = "bold"),
+  legend.background=element_rect(fill="white", color=NA),
   legend.position = "right", 
   legend.justification = "left",
   legend.margin = margin(t = 0, r = 0.10, b = 0, l = 0.10, unit = "cm"),
   legend.key.width = unit(legend_units, "line"), 
   legend.key.height = unit(legend_units, "line"),
-  plot.title = element_text(size = rel(1.55), face = "bold", hjust = 0.5, 
-                            vjust = -3, lineheight = 1, 
+  plot.title = element_text(size = rel(1.55), face = "bold", family = "arial",
+                            hjust = 0.5, vjust = -3, lineheight = 1, 
                             margin = margin(t = 0, r = 0, b = 2, l = 0)), 
-  plot.subtitle = element_text(size = rel(1.25), hjust = 0.5, vjust = -3, 
-                               lineheight = 1, 
+  plot.subtitle = element_text(size = rel(1.25), family = "arial",
+                               hjust = 0.5, vjust = -3, lineheight = 1, 
                                margin = margin(t = 5, r = 0, b = 15, l = 0)),
   plot.margin = margin(t = 0.05, r = 0.25, b = 0.05, l = 0.25, unit = "cm"),
   plot.background = element_rect("white", color = NA),

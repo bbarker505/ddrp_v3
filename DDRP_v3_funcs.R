@@ -6,7 +6,10 @@
 # Log of recent edits (2024-current) -----
 # 12/27/24: Added code to remove unused PEMs for spp. w/ obligate diapause 
 # 11/4/24: Finished replacing all "raster" functions with "terra" functions
-#
+# 1/2/25: Fixed ggplot errors - 1) added "show.legend=TRUE" to base map function 
+# to show unused factor levels and adjusted code in "PlotMap_stress" to
+# resolve issues resulting from using "geom_sf" instead of "geom_path."
+
 # Issues to resolve: boundary of CONUS doesn't line up completely with raster
 # May not be an issue, but the color key in PEMs is really convoluted - should
 # look into simplifying the code if possible.
@@ -109,7 +112,8 @@ Base_map <- function(df) {
   # Base map plot
   # "coord_sf" zooms to bounding box (region of interest)
   p <- ggplot() + 
-    geom_raster(data = df, aes(x = x, y = y, fill = value)) + 
+    geom_raster(data = df, aes(x = x, y = y, fill = value), 
+                show.legend = TRUE) + 
     geom_sf(data = base_map, color = "black", fill = NA, lwd = 0.4) +
     coord_sf(xlim = c(min(df$x), max(df$x)), 
              ylim = c(min(df$y), max(df$y)), expand = FALSE)
@@ -1900,25 +1904,25 @@ PlotMap_stress <- function(r, d, max1, max2, titl, lgd, outfl) {
     
     # If any values are greater than limit 1 but less than limit 2, then 
     # plot countour line for just limit 1
-  } else if (any(df$value > 0) & !is.numeric(max1_c) & is.numeric(max2_c)) { 
-    # max1_c is class "SpatialLinesDataFrame" but max2_c is class "numeric" 
+  } else if (any(df$value > 0 & is.data.frame(max1_c) & is.numeric(max2_c))) {
+    # max1_c is class "data.frame" and "sf" but max2_c is class "numeric" 
     # (max2_c = 0)
     p <- Base_map(df2) +
       scale_fill_brewer(palette = "Spectral", direction = -1, 
                         name = str_wrap(paste0(lgd), width = 15)) +
       scale_color_manual(name = "Stress Limits", 
                          values = c("Stress limit 1" = "magenta")) +
-      geom_path(data = max1_c, aes(x = long, y = lat, group = group, 
-                                   color = "Stress limit 1"), lwd = 0.15) +
+      geom_sf(data = max1_c, aes(color = "Stress limit 1"), lwd = 0.15) +
       labs(title = str_wrap(paste(sp, titl), width = titl_width), 
            subtitle = str_wrap(subtitl, width = subtitl_width)) +
       theme_map(base_size = base_size) + 
       mytheme +
-      guides(colour = guide_legend(override.aes = list(size = 1), order = 1)) 
+      guides(colour = guide_legend(
+        override.aes = list(size = 1, fill="white"), order = 1)) 
     
     # If any values are greater than limit1 and limit2, then plot 
     # countour lines for both limit1 and limit2
-  } else if (!is.numeric(max1_c) & !is.numeric(max2_c)) {
+  } else if (is.data.frame(max1_c) & is.data.frame(max2_c)) {
     p <- Base_map(df2) +
       scale_fill_brewer(palette = "Spectral", direction = -1, 
                         name = str_wrap(paste0(lgd), width = 15)) +
@@ -1931,7 +1935,8 @@ PlotMap_stress <- function(r, d, max1, max2, titl, lgd, outfl) {
            subtitle = str_wrap(subtitl, width = subtitl_width)) +
       theme_map(base_size = base_size) + 
       mytheme +
-      guides(colour = guide_legend(override.aes = list(size = 1), order = 1))
+      guides(colour = guide_legend(
+        override.aes = list(size = 1, fill="white"), order = 1)) 
   }
   
   # Need to use "coord_sf" again becuase of added geom_sfs (stress limits)
