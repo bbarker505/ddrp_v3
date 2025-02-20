@@ -9,6 +9,9 @@
 # 1/2/25: Fixed ggplot errors - 1) added "show.legend=TRUE" to base map function 
 # to show unused factor levels and adjusted code in "PlotMap_stress" to
 # resolve issues resulting from using "geom_sf" instead of "geom_path."
+# 2/20/25: Altered NAflag in SaveRaster funcs and changed datatype for certain
+# rasters to save disk spcae - *NaN flag can't be used for INT datatypes!*
+# Also edits to DDtotal plot to show 0 values in legend when 0 values are absent.
 
 # Issues to resolve: boundary of CONUS doesn't line up completely with raster
 # May not be an issue, but the color key in PEMs is really convoluted - should
@@ -1038,6 +1041,7 @@ PlotMap <- function(r, d, titl, lgd, outfl) {
   #
   #### * DDtotal ####
   if (grepl("DDtotal", outfl)) {
+    
     # Caption for log file
     log_capt <- paste("- Number of accumulated degree-days on", 
                          format(as.Date(d, "%Y%m%d"), "%m/%d/%Y"))
@@ -1047,12 +1051,17 @@ PlotMap <- function(r, d, titl, lgd, outfl) {
       df$value <- factor(df$value)
       # If there are any non-zero values, then cut values into bins
     } else {
+      # Sometimes there are 0 DDs, so need to add a fake value for 0
+      # or it doesn't show up in the legend.
+      if (any(df$value != 0)) {
+        df <- add_row(df, x = NA, y = NA, value = 0)
+      }
+      # Bin DDs into categories for plotting
       df <- Cut_bins(df, 10)  
       df$value <- factor(df$value, 
                          levels = unique(df$value[order(df$value_orig)]))
-
     }
-    
+    # Plot
     p <- Base_map(df) +       
       scale_fill_brewer(palette = "Spectral", direction = -1, 
                         name = paste0(lgd)) +
@@ -2036,24 +2045,21 @@ RegCluster <- function(value) {
 # output rasters (see "raster" library specificatoins)
 SaveRaster <- function(r, cohort, tile_num, outnam, datatype) {
   if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
-    #daily_logFile <- paste0("Daily_loop_cohort", cohort, "_", tile_num, ".txt")
     writeRaster(r, file = paste0(outnam, "_cohort", cohort, "_tile", tile_num, ".tif"),
                 datatype = datatype, overwrite = TRUE)
   } else {
-    #daily_logFile <- paste0("Daily_loop_cohort", cohort, ".txt")
     writeRaster(r, file = paste0(outnam, "_cohort", cohort, ".tif"), 
                 datatype = datatype, overwrite = TRUE)
   }
-  #cat("Saving raster: ", outnam, "_cohort", cohort, ".tif\n\n", sep = "", 
-  #file=daily_logFile, append=TRUE) 
 }
 
 # Same as above but for saving rasters in the "Data Processing" section, and 
 # prints caption in the log file 
 # r = raster, outnam = output file name; datatype = number of digits int the 
 # output rasters (see "raster" library specificatoins); log_capt = caption
-SaveRaster2 <- function(r, outnam, datatype, log_capt) {
-  writeRaster(r, file = paste0(outnam, ".tif"), overwrite = TRUE)
+SaveRaster2 <- function(r, outnam, log_capt, datatype) {
+  writeRaster(r, file = paste0(outnam, ".tif"), overwrite = TRUE, 
+              datatype = datatype)
   outnam2 <- paste0("\n\nSaving raster: ", outnam, ".tif\n")
   cat(outnam2, str_wrap(paste0(log_capt, "\n"), width = 80, exdent = 2), 
       sep = "", file = Model_rlogging, append = TRUE) 

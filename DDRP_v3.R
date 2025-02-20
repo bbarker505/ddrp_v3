@@ -4,6 +4,7 @@
 # Log of recent edits (2022-current)
 # 11/16/24: Fixed bug in Adult by Gen code that caused crashes on certain servers
 # 11/5/24: Finished converting code to replace "raster" with "terra" functions
+# 2/19/25: Changed some SaveRaster and SaveRaster2 arguments
 
 # DDRP v3
 options(echo = FALSE)
@@ -124,7 +125,7 @@ if (!is.na(opts[1])) {
   odd_gen_map <- opts$odd_gen_map
 } else {
   #### * Default values for params, if not provided in command line ####
-  spp           <- "SLF" # Default species to use
+  spp           <- "EAB" # Default species to use
   forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
   start_year    <- "2023" # Year to use
   start_doy     <- 1 # Start day of year          
@@ -137,7 +138,7 @@ if (!is.na(opts[1])) {
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "SLF_2023_v3.2" # Output dir
+  out_dir       <- "EAB_test" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -1119,14 +1120,13 @@ middle_cohort <- ceiling(ncohort/2)
 Lfstg <- rast(paste0("Lifestage_cohort", middle_cohort, ".tif"))/10
 NumGen <- rast(paste0("NumGen_cohort", middle_cohort, ".tif"))
 StageCt <- mosaic(Lfstg, NumGen, fun = "sum") # Sum each layer of the 2 rasters
-writeRaster(StageCt, filename = "StageCount.tif", datatype = "FLT4S", 
-            overwrite = TRUE)
+SaveRaster2(StageCt, "StageCount", "Stage count for all dates", "FLT4S")
 
 # Save single raster for Stage Count for "today" (today_doy) if current year
 if (stageCt_today) {
   StageCt_today <- StageCt[[grep(today_dat, dats2)]]
-  writeRaster(StageCt_today, filename = paste0("StageCount_", today_dat, ".tif"), 
-              overwrite = TRUE)
+  SaveRaster2(StageCt_today, paste0("StageCount_", today_dat), 
+              "Stage count for today's date", "FLT4S")
 }
 
 rm(Lfstg, NumGen, StageCt) # Free up memory
@@ -1157,22 +1157,22 @@ if (exclusions_stressunits) {
   StageCt_excl2 <- rast(Rast_Subs_Excl(rast("StageCount.tif"), "Excl2"))
 
   # Save raster results
-  writeRaster(StageCt_excl1, filename = "StageCount_Excl1.tif",   
-              datatype = "FLT4S", overwrite = TRUE)
-  writeRaster(StageCt_excl2, filename = "StageCount_Excl2.tif", 
-              datatype = "FLT4S", overwrite = TRUE)
+  SaveRaster2(StageCt_excl1, "StageCount_Excl1", "Stage count with sev. 
+              climate stress excl.", "FLT4S")
+  SaveRaster2(StageCt_excl2, "StageCount_Excl2", "Stage count with sev. 
+              and mod. climate stress excl.", "FLT4S")
 
   # Save single rasters for Stage Count for "today" if current year
   if (stageCt_today) {
     
       StageCt_excl1_today <- StageCt_excl1[[grep(today_dat, dats2)]]
-      writeRaster(StageCt_excl1_today, 
-                  filename = paste0("StageCount_Excl1_", today_dat, ".tif"), 
-                  datatype = "FLT4S", overwrite = TRUE)
+      SaveRaster2(StageCt_excl1_today, paste0("StageCount_Excl1_", today_dat),
+                  str_wrap(paste("Stage count with severe climate 
+                  stress excl. for today's date"), width = 80), "FLT4S")
       StageCt_excl2_today <- StageCt_excl2[[grep(today_dat, dats2)]]
-      writeRaster(StageCt_excl2_today, 
-                  filename = paste0("StageCount_Excl2_", today_dat, ".tif"),   
-                  datatype = "FLT4S", overwrite = TRUE)
+      SaveRaster2(StageCt_excl2_today, paste0("StageCount_Excl1_", today_dat),
+                  str_wrap(paste("Stage count with severe and moderate climate 
+                  stress excl. for today's date"), width = 80), "FLT4S")
   }
   
 }
@@ -1194,7 +1194,9 @@ RegCluster(round(ncores/10))
 for (i in 1:length(StageCt_lst)) {
   
   fl <- StageCt_lst[i]
-  #for (dat in dats_list) {
+  
+ #for (dat in dats_list) {
+ #  for (d in unname(unlist(dat))) {
   foreach(dat = dats_list, .packages = pkgs, .inorder = TRUE) %:%
     foreach(d = unname(unlist(dat)), 
             .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1263,6 +1265,7 @@ for (i in 1:length(StageCt_lst)) {
   
     }
 }
+#}
 
 stopCluster(cl)
 rm(cl)
@@ -1404,7 +1407,7 @@ if (pems) {
       # Name layers, save raster, and plot
       names(avg_PEM) <- "Avg" # name layer for use below
       SaveRaster2(avg_PEM, paste("Avg", type, last(dats2), sep = "_"), 
-                  "INT2U", paste("- Avg.", eventLabel))
+                  paste("- Avg.", eventLabel), "INT2U")
       PlotMap(avg_PEM, last(dats2), paste("Avg.", eventLabel, sep = " "), 
               paste("Avg.", eventLabel, sep = " "), paste("Avg", type, sep="_"))
       
@@ -1415,7 +1418,7 @@ if (pems) {
       min_PEM <- min(PEM_r, na.rm= TRUE)
       names(min_PEM) <- "Earliest" # name layer for use below
       SaveRaster2(min_PEM, paste("Earliest", type, last(dats2), sep = "_"), 
-                  "INT2U", paste("- Earliest", eventLabel))
+                  paste("- Earliest", eventLabel), "INT2U")
       PlotMap(min_PEM, last(dats2), paste("Earliest", eventLabel, sep = " "), 
               paste("Earliest", eventLabel, sep = " "), 
               paste("Earliest", type, sep = "_"))
@@ -1436,9 +1439,9 @@ if (pems) {
               
           # Save raster results; create and save summary maps
           SaveRaster2(PEM_excl1, paste0(nam, "_", type, "Excl1_", last(dats2)), 
-                      "INT2S", paste("-", nam, eventLabel))
+                      paste("-", nam, eventLabel), "INT2U")
           SaveRaster2(PEM_excl2, paste0(nam, "_", type, "Excl2_", last(dats2)), 
-                      "INT2S", paste("-", nam, eventLabel))
+                      paste("-", nam, eventLabel), "INT2U")
           PlotMap(PEM_excl1, last(dats2), paste0(nam, " ", eventLabel, 
                   " w/ climate stress exclusion"), paste0(nam, " ", eventLabel),
                   paste0(nam, "_", type, "Excl1"))
@@ -1528,9 +1531,9 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
     Lfstg_wtd <- Weight_rasts(Lfstg_fls, "Lifestage")
       
     # Save raster results
-    SaveRaster2(Lfstg_wtd, paste0("Misc_output/", stg_nam), "INT2U",  
+    SaveRaster2(Lfstg_wtd, paste0("Misc_output/", stg_nam),   
                 paste("-", stg_nam, "relative pop. size for all", 
-                      num_dats, "dates")) 
+                      num_dats, "dates"), "FLT4S") 
 
     # Create and save summary maps
     Lfstg_plots <- foreach(lyr = 1:nlyr(Lfstg_wtd), 
@@ -1556,8 +1559,8 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
       # Severe stress exclusion only
       SaveRaster2(Lfstg_wtd_excl1, 
                   paste0("Misc_output/", stg_nam, "_Excl1"), 
-                  "INT2S", paste("-", stg_nam, "relative pop. size for all", 
-                  num_dats, "dates"))
+                  paste("-", stg_nam, "relative pop. size for all", 
+                  num_dats, "dates"), "FLT4S")
       
       Lfstg_Excl1_plots <- foreach(lyr = 1:nlyr(Lfstg_wtd_excl1),
                                    .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1575,8 +1578,8 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
       
       SaveRaster2(Lfstg_wtd_excl2, 
                   paste0("Misc_output/", stg_nam, "_Excl2"), 
-                  "INT2S", paste("-", stg_nam, "relative pop. size for all", 
-                                 num_dats, "dates")) 
+                  paste("-", stg_nam, "relative pop. size for all", 
+                                 num_dats, "dates"), "FLT4S") 
       
       Lfstg_Excl2_plots <- foreach(lyr = 1:nlyr(Lfstg_wtd_excl2), 
                                    .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1608,8 +1611,8 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
     # written to account for the instance where stg == non_stg_nonOW.
     Lfstg_incOW_wtd <- Weight_rasts(Lfstg_fls, "Lifestage")
     SaveRaster2(Lfstg_incOW_wtd, paste0("Misc_output/", stg_nonOW_nam), 
-                "INT2U", paste("-", stg_nonOW_nam, "relative pop. size for", 
-                               num_dats, "dates"))
+                paste("-", stg_nonOW_nam, "relative pop. size for", 
+                               num_dats, "dates"), "FLT4S")
     
     Lfstg_incOW_plots <- foreach(lyr = 1:nlyr(Lfstg_incOW_wtd), 
                                  .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1632,9 +1635,9 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
       Lfstg_incOW_wtd_excl1 <- rast(Rast_Subs_Excl(Lfstg_incOW_wtd, "Excl1")) 
         
       SaveRaster2(Lfstg_incOW_wtd_excl1, 
-        paste0("Misc_output/", stg_nonOW_nam, "_Excl1"), "INT2S", 
+        paste0("Misc_output/", stg_nonOW_nam, "_Excl1"), 
         str_wrap(paste("-", stg_nonOW_nam, " relative pop. size w/ sev. climate 
-                       stress exclusion for", num_dats, "dates"), width = 80))
+              stress exclusion for", num_dats, "dates"), width = 80), "FLT4S")
       
       Lfstg_incOW_Excl1_plots <- foreach(lyr = 1:nlyr(Lfstg_incOW_wtd_excl1), 
                                     .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1652,10 +1655,10 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
       Lfstg_incOW_wtd_excl2 <- rast(Rast_Subs_Excl(Lfstg_incOW_wtd, "Excl2")) 
       
       SaveRaster2(Lfstg_incOW_wtd_excl2, 
-        paste0("Misc_output/", stg_nonOW_nam, "_Excl2"), "INT2S",
+        paste0("Misc_output/", stg_nonOW_nam, "_Excl2"), 
         str_wrap(paste("-", stg_nonOW_nam, "relative pop. size w/ sev. and mod. 
                        climate stress exclusion for", num_dats, "dates"), 
-                 width = 80))
+                 width = 80), "FLT4S")
       
       Lfstg_incOW_Excl2_plots <- foreach(lyr = 1:nlyr(Lfstg_incOW_wtd_excl2), 
         .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1722,8 +1725,8 @@ foreach(i = 0:maxgens, .packages = pkgs) %:%
     cohort <- unique(str_split_fixed(fl, "_|[.]", 3)[,2])
     #for (i in 0:maxgens) {
     Gen_rast <- rast(fl) == i
-    SaveRaster2(Gen_rast, paste("Gen", i, cohort, sep = "_"), "INT2U", 
-                paste("- Gen.", i, "for all", num_dats, "dates"))
+    SaveRaster2(Gen_rast, paste("Gen", i, cohort, sep = "_"),
+               paste("- Gen.", i, "for all", num_dats, "dates"), "FLT4S")
   }
 #}
 
@@ -1759,8 +1762,8 @@ foreach(i = 1:length(gen_fls_lst), .packages = pkgs, .inorder = TRUE) %dopar% {
   # gen (as opposed to the Lifestage rasters needing to be split by stage).
   NumGen_wtd <- Weight_rasts(gen_cohort_fls, "NumGen")
   names(NumGen_wtd) <- paste0(gen_nam, ".", 1:nlyr(NumGen_wtd)) 
-  SaveRaster2(NumGen_wtd, paste("Misc_output/Gen", gen, sep = "_"), "INT2U", 
-               paste("- Gen.", gen, "for all", num_dats, "dates"))
+  SaveRaster2(NumGen_wtd, paste("Misc_output/Gen", gen, sep = "_"), 
+               paste("- Gen.", gen, "for all", num_dats, "dates"), "FLT4S")
   #cat("Finished NumGen_wtd", gen, "\n")
   
   # As for the Lifestage results, it is more memory efficient to overlay the
@@ -1772,9 +1775,9 @@ foreach(i = 1:length(gen_fls_lst), .packages = pkgs, .inorder = TRUE) %dopar% {
     NumGen_wtd_excl1 <- rast(Rast_Subs_Excl(NumGen_wtd, "Excl1"))
     names(NumGen_wtd_excl1) <- gsub("Gen", "GenExcl1", names(NumGen_wtd))
     SaveRaster2(
-      NumGen_wtd_excl1, paste("Misc_output/GenExcl1", gen, sep = "_"), "INT2S",
+      NumGen_wtd_excl1, paste("Misc_output/GenExcl1", gen, sep = "_"), 
       str_wrap(paste("- Gen.", gen, "with severe climate stress excl. for all",
-                               num_dats, "dates"), width = 80))
+                               num_dats, "dates"), width = 80), "FLT4S")
     rm(NumGen_wtd_excl1) # Free memory
        
     # NumGenEXCL2  
@@ -1782,10 +1785,10 @@ foreach(i = 1:length(gen_fls_lst), .packages = pkgs, .inorder = TRUE) %dopar% {
     names(NumGen_wtd_excl2) <- gsub("Gen", "GenExcl2", names(NumGen_wtd))
     rm(NumGen_wtd) # Free up memory
     SaveRaster2(
-      NumGen_wtd_excl2, paste("Misc_output/GenExcl2", gen, sep = "_"), "INT2S",
+      NumGen_wtd_excl2, paste("Misc_output/GenExcl2", gen, sep = "_"), 
       str_wrap(paste("- Gen.", gen,
                      "with severe and moderate climate stress excl. for all",
-                     num_dats, "dates"), width = 80))
+                     num_dats, "dates"), width = 80), "FLT4S")
     rm(NumGen_wtd_excl2)
     cat("Finished NumGen_wtd_excl2 - gen", gen, "\n")
   }
@@ -1857,7 +1860,8 @@ if (exclusions_stressunits) {
   foreach(i = 1:length(NumGen_fls), .packages = pkgs, .inorder = TRUE) %dopar% {
     fl_type <- names(NumGen_fls[i])
     writeRaster(rast(unlist(NumGen_fls[i], use.names = FALSE)),
-              filename = paste0(fl_type, "_all_merged.tif"), overwrite=TRUE)
+              filename = paste0(fl_type, "_all_merged.tif"), 
+              overwrite=TRUE)
   }
 
   stopCluster(cl)
@@ -2191,8 +2195,8 @@ for (i in 1:length(dats2)) {
 # Alternatively the above output can be held in memory as a huge raster.
 # The run times are essentially the same, but will use this method
 # instead in case there may be memory issues.
-writeRaster(rast(all_combos_lst), 
-            filename = "NumGen_all_merged.tif", overwrite = TRUE)
+writeRaster(rast(all_combos_lst), filename = "NumGen_all_merged.tif", 
+            overwrite = TRUE)
 
 # All done - print messages and stop clusters  
 cat("Done\n", file = Model_rlogging, append = TRUE)
@@ -2236,14 +2240,18 @@ mskGenAdult <- foreach(gen = 0:maxgens,
     Adults_byGen <- c(rast("Misc_output/Adult.tif"))
     Adults_byGen[is.na(NumGen_msk)] <- NA
     names(Adults_byGen) <- names(NumGen_msk)
-    writeRaster(Adults_byGen, paste0("Adult_Gen", gen, ".tif"), overwrite=TRUE)
-
+    SaveRaster2(Adults_byGen, paste0("Adult_Gen", gen), "Adult by gen", "FLT4S")
+    
     # Add climate stress exclusions if selected
     if (exclusions_stressunits == 1) {
       Adults_byGen_excl1 <- rast(Rast_Subs_Excl(Adults_byGen, "Excl1")) 
-      writeRaster(Adults_byGen_excl1, paste0("Adult_Excl1_Gen", gen, ".tif"))
+      SaveRaster2(Adults_byGen_excl1, paste0("Adult_Excl1_Gen", gen),
+                  "Adult by gen with mod. climate stress excl.", "FLT4S")
+          
       Adults_byGen_excl2 <- rast(Rast_Subs_Excl(Adults_byGen, "Excl2"))
-      writeRaster(Adults_byGen_excl2, paste0("Adult_Excl2_Gen", gen, ".tif"))
+      SaveRaster2(Adults_byGen_excl2, paste0("Adult_Excl2_Gen", gen),
+                 str_wrap(paste("Adult by gen with sev. and mod. climate 
+                                stress excl."), width = 80), "FLT4S")
     }
     
 }
@@ -2251,6 +2259,10 @@ mskGenAdult <- foreach(gen = 0:maxgens,
 
 stopCluster(cl)
 rm(cl)
+
+# Delete "NumGen...all_merged" files - they are very large
+NumGen_mrgd_fls
+invisible(file.remove(unlist(NumGen_mrgd_fls)))
 
 # All done - print messages and stop clusters  
 cat("\nDone\n", file = Model_rlogging, append = TRUE)
