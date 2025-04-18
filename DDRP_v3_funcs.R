@@ -12,7 +12,7 @@
 # 2/20/25: Altered NAflag in SaveRaster funcs and changed datatype for certain
 # rasters to save disk spcae - *NaN flag can't be used for INT datatypes!*
 # Also edits to DDtotal plot to show 0 values in legend when 0 values are absent.
-
+# 4/18/25: Fixed "Base_map" function for mapping regions beyond North America
 # Issues to resolve: boundary of CONUS doesn't line up completely with raster
 # May not be an issue, but the color key in PEMs is really convoluted - should
 # look into simplifying the code if possible.
@@ -101,7 +101,7 @@ Base_map <- function(df) {
   # Data to use for base map (i.e. target region - will usually be US states)
   if (region_param %in% c("EUROPE", "CHINA")) {
     # "world" is country boundaries only
-    base_map <- map_data("world") 
+    base_map <- st_as_sf(maps::map("world", plot = FALSE, fill = TRUE))
   } else if (region_param == "N_AMERICA") {
     # Combine "world" and "state" (Canada plus CONUS w/ states) 
     states_sf <- st_as_sf(maps::map("state", plot = FALSE, fill = TRUE))
@@ -118,8 +118,9 @@ Base_map <- function(df) {
     geom_raster(data = df, aes(x = x, y = y, fill = value), 
                 show.legend = TRUE) + 
     geom_sf(data = base_map, color = "black", fill = NA, lwd = 0.4) +
-    coord_sf(xlim = c(min(df$x), max(df$x)), 
-             ylim = c(min(df$y), max(df$y)), expand = FALSE)
+    coord_sf(xlim = c(min(df$x, na.rm = TRUE), max(df$x, na.rm = TRUE)), 
+             ylim = c(min(df$y, na.rm = TRUE), max(df$y, na.rm = TRUE)), 
+             expand = FALSE)
 }
 
 #### (3). CohortDistrib: cohort emergence distribution ####
@@ -1063,7 +1064,7 @@ PlotMap <- function(r, d, titl, lgd, outfl) {
     }
     # Plot
     p <- Base_map(df) +       
-      scale_fill_brewer(palette = "Spectral", direction = -1, 
+        scale_fill_brewer(palette = "Spectral", direction = -1, 
                         name = paste0(lgd)) +
       labs(title = str_wrap(paste(sp, titl), width = titl_width), 
             subtitle = str_wrap(paste(subtitl), width = subtitl_width)) +

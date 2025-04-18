@@ -125,20 +125,20 @@ if (!is.na(opts[1])) {
   odd_gen_map <- opts$odd_gen_map
 } else {
   #### * Default values for params, if not provided in command line ####
-  spp           <- "EAB" # Default species to use
-  forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
+  spp           <- "SLF" # Default species to use
+  forecast_data <- "EOBS" # Forecast data to use (PRISM or NMME)
   start_year    <- "2023" # Year to use
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
-  region_param  <- "OR" # Region 
+  region_param  <- "EUROPE" # Region 
   exclusions_stressunits    <- 1 # Turn on/off climate stress unit exclusions
   pems          <- 1 # Turn on/off pest event maps
   mapA          <- 1 # Make maps for adult stage
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "EAB_test" # Output dir
+  out_dir       <- "SLF_EUROPE" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -1120,6 +1120,11 @@ middle_cohort <- ceiling(ncohort/2)
 Lfstg <- rast(paste0("Lifestage_cohort", middle_cohort, ".tif"))/10
 NumGen <- rast(paste0("NumGen_cohort", middle_cohort, ".tif"))
 StageCt <- mosaic(Lfstg, NumGen, fun = "sum") # Sum each layer of the 2 rasters
+
+# TO DO: Remove any cells with 0 values - this is an issue for Europe - why?
+# For Europe, some cells in NW Russia (east of Finland) have NA for life stage,
+# resulting in 0.NA values. Not sure why NumGen isn't NA as well. 
+StageCt <- subst(StageCt, 0, NA)
 SaveRaster2(StageCt, "StageCount", "Stage count for all dates", "FLT4S")
 
 # Save single raster for Stage Count for "today" (today_doy) if current year
@@ -1214,7 +1219,8 @@ for (i in 1:length(StageCt_lst)) {
         mutate(value = round(value, 1)) %>% # Round decimal (must do this)
         mutate(gen = as.numeric(ifelse(value > 0, 
                             str_split_fixed(value, "[.]", 2)[,1], value))) %>%
-        mutate(stg_num = as.character(ifelse(value > 0, 
+        #mutate(stg_num = as.character(ifelse(value > 0, 
+        mutate(stg_num = as.character(ifelse(value >= 0, 
                               str_split_fixed(value, "[.]", 2)[,2], value))) %>%
         left_join(., stg_vals, by = "stg_num") %>%
         mutate(gen_stg = paste0(gen, ".", life_cycle)) # Correctly sort legend
