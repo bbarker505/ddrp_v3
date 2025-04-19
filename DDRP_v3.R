@@ -5,6 +5,7 @@
 # 11/16/24: Fixed bug in Adult by Gen code that caused crashes on certain servers
 # 11/5/24: Finished converting code to replace "raster" with "terra" functions
 # 2/19/25: Changed some SaveRaster and SaveRaster2 arguments
+# 4/18/25: Updates to make DDRP work correctly for Europe (issues with StageCount)
 
 # DDRP v3
 options(echo = FALSE)
@@ -1445,9 +1446,9 @@ if (pems) {
               
           # Save raster results; create and save summary maps
           SaveRaster2(PEM_excl1, paste0(nam, "_", type, "Excl1_", last(dats2)), 
-                      paste("-", nam, eventLabel), "INT2U")
+                      paste("-", nam, eventLabel), "INT2S")
           SaveRaster2(PEM_excl2, paste0(nam, "_", type, "Excl2_", last(dats2)), 
-                      paste("-", nam, eventLabel), "INT2U")
+                      paste("-", nam, eventLabel), "INT2S")
           PlotMap(PEM_excl1, last(dats2), paste0(nam, " ", eventLabel, 
                   " w/ climate stress exclusion"), paste0(nam, " ", eventLabel),
                   paste0(nam, "_", type, "Excl1"))
