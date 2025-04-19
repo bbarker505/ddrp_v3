@@ -1414,7 +1414,7 @@ if (pems) {
       # Name layers, save raster, and plot
       names(avg_PEM) <- "Avg" # name layer for use below
       SaveRaster2(avg_PEM, paste("Avg", type, last(dats2), sep = "_"), 
-                  paste("- Avg.", eventLabel), "INT2U")
+                  paste("- Avg.", eventLabel), "INT2S")
       PlotMap(avg_PEM, last(dats2), paste("Avg.", eventLabel, sep = " "), 
               paste("Avg.", eventLabel, sep = " "), paste("Avg", type, sep="_"))
       
@@ -1425,7 +1425,7 @@ if (pems) {
       min_PEM <- min(PEM_r, na.rm= TRUE)
       names(min_PEM) <- "Earliest" # name layer for use below
       SaveRaster2(min_PEM, paste("Earliest", type, last(dats2), sep = "_"), 
-                  paste("- Earliest", eventLabel), "INT2U")
+                  paste("- Earliest", eventLabel), "INT2S")
       PlotMap(min_PEM, last(dats2), paste("Earliest", eventLabel, sep = " "), 
               paste("Earliest", eventLabel, sep = " "), 
               paste("Earliest", type, sep = "_"))
