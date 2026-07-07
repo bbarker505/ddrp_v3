@@ -1,0 +1,67 @@
+# These are OSU IPPC/APHIS PPQ DDRP model params and values for 
+# JPB, Japanese beetle, Popilia japonica - in Degs Celsius (C)
+# Last udpated in Feb 2026 for DDRP v3 - includes params for
+# including dry and wet stresses in the climatic suitaiblity model
+  fullname   <- "Japanese beetle"
+  pestof     <- "turf, fruits, ornaments"
+  stgorder   <- c("OL","P","A","E","L") # stgorder changed to 1, 2, 3, 4, 5
+  owstage    <- "OL"  # OL means ow as larvae
+  eggLDT     <- 10    # IPPC modeling http://uspest.org/wea/ALB_model_v1.pdf
+  eggUDT     <- 33.3  # IPPC modeling
+  larvaeLDT  <- 10    # IPPC modeling
+  larvaeUDT  <- 33.3  # IPPC modeling
+  pupaeLDT   <- 10    # IPPC modeling
+  pupaeUDT   <- 33.3  # IPPC modeling
+  adultLDT   <- 10    # IPPC modeling
+  adultUDT   <- 33.3  # IPPC modeling
+  eggDD      <- 172   # IPPC modeling  
+  larvaeDD   <- 1148  # note this would ONLY be used if it is shown JPB can be multivoltine
+  pupDD      <- 150  
+  adultDD    <- 132   # IPPC modeling approx time to 30% oviposition
+  obligate_diapause <- 1 # force model to univoltine
+  OWlarvaeDD <- 361   # OW stage 361 DD to begin pupation
+  calctype   <- "triangle"
+  # Pest Event Maps (PEMs) must be turned on for these to get used:
+  PEMnumgens       <- 1  # create PEMS for up to this many generations (max is 4)
+  eggEventDD       <- 172 # PEMs for egg stage hatch is ca 220 DDs into stage (egg devel nearly complete)
+  eggEventLabel    <- "egg hatch" # Label for PEM egg stage
+  larvaeEventDD    <- 1148 # PEMs for larvae stage (not used for univoltine model)
+  larvaeEventLabel <- "multivoltine: larval development complete" # Label for PEM larvae stage
+  pupaeEventDD     <- 150 # PEMs for pupal stage is at end to signal adults
+  pupaeEventLabel  <- "adult emergence" # Label for PEM pupal stage
+  adultEventDD     <- 132 # PEMs for adult stage (ca. first oviposition) is 132 DDs into stage 
+  #adultEventLabel <- "30%_adult_flight" # Label for PEM adult stage
+  adultEventLabel  <- "egg laying" # Label for PEM adult stage
+  OWEventP         <- 1  # PEMs for OWlarvae stage - pupation happens at 100% lcarval devel  
+  OWEventLabel     <- "pupation in spring"  # Label for PEM OWlarvae stage
+# Climatic suitability model parameters
+  coldstress_threshold  <- -15   # NEW all stages cold/heat stress units: threshold using daily Tlow not Tmean
+  coldstress_units_max1 <- 700  # 700 ColdDD excl1; so "most" all die once reached
+  coldstress_units_max2 <- 1000  # 1000 ColdDD excl2; so all die once reached
+  heatstress_threshold   <- 36   # estimated from ???
+  heatstress_units_max1  <- 75   # HeatDD excl1; so "most" all die once reached
+  heatstress_units_max2  <- 150  # HeatDD excl2; so all die once reached
+  drystress_threshold <- 0.05 # New 2025: dry stress units: values range from 0 to 1
+  drystress_units_max1 <- 10
+  drystress_units_max2 <- 60
+  wetstress_threshold <- 0.79
+  wetstress_units_max1 <- 60
+  wetstress_units_max2 <- 90
+ # OW stage emergence parameters - NEEDS CALIBRATION
+ # Len's interpretation of how this works: the earliest event (xdist1) is the very first insect to 
+ # reach the next stage (pupae) after the OW stage (OWlarvae), so should be just slightly less than
+ # the OWlarvaeDD value (361), so we set at 335 (ca 2.5 warm days earlier in the spring), then  
+ # I would set the range (xdist2 - xdist1) as equal to
+ # the value derived in the spreadsheet analysis for eggs and pupae using Vittum 1983 data (400 DDC)   
+ # so xdist2 = 335+400 = 735. The midpoint (distro_mean) would then be 535. 
+ # Further calibration can be performed as 
+ # this is based on two life stages (pupae and eggs) from data from a single location and year. 
+ # Other data sets only monitor the adult stage which is problematic to use because 1) the adult stage
+ # is rather long and variable (and not measured in the lab) and 2) cold weather stops the activities
+ # (both sampling and adult activities) so there is basically "no end" for most of the locations.
+  distro_mean <- 535
+  distro_var <- 1600 
+  xdist1 <- 335 
+  xdist2 <- 735
+  distro_shape <- "normal" 
+# END

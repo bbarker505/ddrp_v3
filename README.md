@@ -1,7 +1,7 @@
 <img src="https://github.com/bbarker505/ddrp_v2/blob/master/images/DDRP_logo2.png" width="300"/>
 <img src="https://github.com/bbarker505/ddrp_v2/blob/master/images/OSU_IPMC_horizontal_2C_O_over_B.png" width="300"/>
 
-# An introduction to DDRP
+# 🗺 An introduction to DDRP
 
 Invasive pests present a significant threat to agricultural production
 in the United States, yet decision support tools that can accurately
@@ -11,7 +11,8 @@ Risk, and Phenological event mapping) was designed to provide regularly
 updated forecasts of the potential distribution (risk of establishment)
 and timing of seasonal activities (phenology) of pests [(Barker et
 al. 2020,](https://doi.org/10.1371/journal.pone.0244005)[Barker et
-al. 2023)](https://doi.org/10.3389/finsc.2023.1239173). An overview of
+al. 2023, )](https://doi.org/10.3389/finsc.2023.1239173)[Barker et 
+al. 2025)[https://doi.org/10.3390/insects16080790]. An overview of
 the DDRP modeling process is below (Fig. 1).
 
 <figure>
@@ -22,28 +23,39 @@ alt="Fig. 1. DDRP modeling overview" />
 overview</figcaption>
 </figure>
 
-# Species models
+# 🪲 Species models
 
-Currently we are using DDRP to produce regularly updated (every 2-3
+Currently we are using DDRP to produce regularly updated (every 1-3
 days) forecasts for 18 high-priority invasive insect species, available
-at [USPest.org](http://uspest.org/CAPS) (Fig. 2). The platform has also
-been adapted to predict the phenology and voltinism (number of
-generations per year) of three biological control insects that have
-photoperiod-cued diapause [(Grevstad et
-al. 2022)](https://doi.org/10.1002/eap.2557), also available at
-[USPest.org](http://uspest.org/dd/dodmaps). We are developing moisture
-processing features in DDRP to improve the modeling of
-moisture-sensitive organisms such as plant pathogens and weeds.
+at [USPest.org](http://uspest.org/CAPS) (Table 1). 
 
-<figure>
-<img
-src="https://github.com/bbarker505/ddrp_v2/blob/master/images/spp_models.png?raw=true"
-alt="Fig. 2. DDRP models developed to date." />
-<figcaption aria-hidden="true">Fig. 2. DDRP models developed to
-date.</figcaption>
-</figure>
+Table 1. The 18 invasive insect species with DDRP models are shown below. 
+Five species are established in CONUS, 12 are on PPQ's [National Priority Pest 
+List](https://approvedmethods.ceris.purdue.edu/), six were formerly included 
+on the list, and two are Federal Program Pests.
 
-# Inputs and outputs
+| Species | Common name | Present in United States | National Priority Pest | Federal Program Pest |
+|:--------|:------------|:-------------------------:|:----------------------:|:--------------------:|
+| *Anoplophora glabripennis* | Asian longhorned beetle | Yes | Yes | Yes |
+| *Chilo suppressalis* | Asiatic rice borer | No | Yes | No |
+| *Cryptoblabes gnidiella* | Christmas berry webworm | No | Yes | No |
+| *Spodoptera litura* | Common or cotton cutworm | No | Yes | No |
+| *Agrilus planipennis* | Emerald ash borer | Yes | No | No |
+| *Spodoptera littoralis* | Egyptian cottonworm | No | No | No |
+| *Thaumatotibia leucotreta* | False codling moth | No | Yes | No |
+| *Popillia japonica* | Japanese beetle | Yes | No | Yes |
+| *Monochamus alternatus* | Japanese pine sawyer beetle | No | No | No |
+| *Epiphyas postvittana* | Light brown apple moth | Yes | No | No |
+| *Platypus quercivorus* | Oak ambrosia beetle | No | Yes | No |
+| *Helicoverpa armigera* | Old world bollworm | No | Yes | Yes |
+| *Dendrolimus pini* | Pine-tree lappet moth | No | Yes | No |
+| *Autographa gamma* | Silver Y moth | No | Yes | No |
+| *Neoleucinodes elegantalis* | Small tomato borer | No | Yes | No |
+| *Lycorma delicatula* | Spotted lanternfly | Yes | Yes | Yes |
+| *Eurygaster integriceps* | Sunn pest | No | Yes | No |
+| *Tuta absoluta* | Tomato leaf miner | No | Yes | No |
+
+# 📥 Inputs and outputs
 
 DDRP uses a process-based (mechanistic) approach to model
 temperature-dependent development, phenology, and climate suitability of
@@ -56,10 +68,19 @@ platform accepts data for any time frame or region, such as data for
 past years or for other countries. Model products include maps of the
 predicted potential distribution (climate-based risk of establishment),
 number of generations, and dates of phenological events. The potential
-distribution is represented by areas where cold and heat stress
+distribution is represented by areas where cold and heat stresses
 accumulations have not exceeded the stress limits of a species.
 
-# Program features
+DDRP forecasts at [USPest.org](https://uspest.org/CAPS) are produced using 
+estimates of daily minimum and maximum temperature from the PRISM dataset and  
+either daily-downscaled NMME (North American Multi-Model Ensemble) 
+7-month forecasts or recent 10-year average PRISM daily data. Newly
+developed features for including dry and wet stress for climatic suitability 
+modeling may use daily soil moisture estimates from the 
+[Soil Moisture Active Passive](https://nsidc.org/data/smap/) Level-4 (SMAP L4) 
+Surface and Root-Zone Soil Moisture product/.
+
+# 💻 Program features
 
 Some of the major features of DDRP currently include:  
 1) Degree-day parameters including durations and lower and upper
@@ -81,13 +102,20 @@ the former is used, then a second PEM, say for mid-larval development,
 could be parameterized using a value such as one-half of the degree-day
 total for larval development.  
 4) Climatic suitability maps, which show two levels of climatic
-suitability (moderate and severe stress exclusions). These are intended
-to indicate risk likelihood of short vs. long-term establishment but
+suitability (moderate and severe stress exclusions). These are intended 
+to indicate risk likelihood of short vs. long-term establishment but
 could also indicate migration zones, and uncertainties such as in
 species parameterization, model structure, and in the sources of climate
-data.
+data. The platform now includes four climate stresses: cold stress, heat 
+stress, dry stress, and wet stress. To date, only the Japanese beetle
+model (JPB2.params) includes the moisture-related stress parameters.
+5) Maps of attempted vs. realized voltinism in insect species with a 
+short-day diapause response (Grevstad et al. 2022)](https://doi.org/10.1002/eap.2557).
+The difference between the attempted and potential generations represents a 
+quantitative measure of phenological mismatch between diapause timing and the 
+end of the growing season.
 
-# Setup and usage
+# 🛠️ Setup and usage
 
 DDRP is an R script (“DDRP\_v3.R”) and must be within the same directory
 an auxilliary R script that contains program functions
@@ -103,7 +131,7 @@ provides information on program requirements, input data, input options,
 examples of command line arguments, types of output files, and run
 times.
 
-# Philosophy
+# 💡 Philosophy
 
 Our development of DDRP has strived to achieve a parsimonious balance of
 both model simplicity and accuracy, with a focus on four philosophies:  
@@ -119,28 +147,65 @@ support rather than more complex research-only models
 # Example outputs
 
 The movie below shows DDRP outputs of the emergence of overwintered
-adults of emerald ash borer over the course of 2021 (Fig. 3). Areas
+adults of emerald ash borer over the course of 2021 (Fig. 2). Areas
 where heat or cold stress has exceeded the stress limits for the species
 are predicted to be excluded from the potential distribution.
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_2021.gif?raw=true"
-alt="Fig. 3. DDRP forecasts for emerald ash borer for 2021." />
-<figcaption aria-hidden="true">Fig. 3. DDRP forecasts for emerald ash
+alt="Fig. 2. DDRP forecasts for emerald ash borer for 2021." />
+<figcaption aria-hidden="true">Fig. 2. DDRP forecasts for emerald ash
 borer for 2021.</figcaption>
 </figure>
 
 Another way to look at this (mostly) same information is with a
-phenological event map, below (Fig. 4).
+phenological event map, below (Fig. 3).
 
 <figure>
 <img
 src="https://github.com/bbarker505/ddrp_v2/blob/master/images/EAB_Avg_PEMp0Excl2_20211231.png?raw=TRUE"
-alt="Fig. 4. A phenological event map for emerald ash borer for 2021." />
-<figcaption aria-hidden="true">Fig. 4. A phenological event map for
+alt="Fig. 3. A phenological event map for emerald ash borer for 2021." />
+<figcaption aria-hidden="true">Fig. 3. A phenological event map for
 emerald ash borer for 2021.</figcaption>
 </figure>
+
+# 📚 Required R packages
+
+### Mapping and Spatial Analysis
+
+- `sf`
+- `terra` 
+
+### Data Manipulation and Utilities
+
+- `dplyr` 
+- `stringr` 
+- `lubridate`  
+- `readr` 
+- `purrr` 
+- `tidyr` 
+- `toOrdinal` 
+
+### Visualization
+
+- `ggplot2`
+- `ggthemes` 
+- `maps` 
+- `viridis` 
+- `RColorBrewer` 
+
+### Parallel Processing
+
+- `doParallel` 
+- `parallel` 
+- `foreach` 
+
+### Other
+
+- `optparse`  
+- `tictoc` 
+- `tools`  
 
 # Acknowledgements
 
@@ -150,7 +215,7 @@ Technology (CPHST) programs, the USDA National Institute of Food and
 Agriculture (NIFA), and the Department of Defense Strategic
 Environmental Research and Development Program (SERDP).
 
-# References
+# 📄 References
 
 Barker, B. S., L. Coop, T. Wepprich, F. Grevstad, and G. Cook. 2020.
 DDRP: real-time phenology and climatic suitability modeling of invasive
@@ -161,6 +226,11 @@ Barker, B. S., L. Coop, J. J. Duan, and T. R. Petrice. 2023. An
 integrative phenology and climatic suitability model for emerald ash
 borer. Frontiers in Insect Science 3:1239173.
 <https://doi.org/10.3389/finsc.2023.1239173>
+
+Barker, B. S.,  J. Beyer, and L. Coop. 2025.Real-time integrative mapping 
+of the phenology and climatic suitability for the spotted lanternfly, 
+<i>Lycorma delicatula</i>. Insects 16:790. 
+<https://doi.org/10.3390/insects16080790>
 
 Coop, L., and B. S. Barker. 2024. Computing infrastructure requirements
 and user guide for hosting DDRP models. Prepared for APHIS PPQ and other

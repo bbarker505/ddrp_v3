@@ -2,24 +2,32 @@
 #.libPaths("/usr/lib64/R/library/")
 #
 # Log of recent edits (2022-current)
+# 4/27/26: Sorted "tminfiles" to ensure correct date ordering
 # 11/16/24: Fixed bug in Adult by Gen code that caused crashes on certain servers
 # 11/5/24: Finished converting code to replace "raster" with "terra" functions
 # 2/19/25: Changed some SaveRaster and SaveRaster2 arguments
 # 4/18/25: Updates to make DDRP work correctly for Europe (issues with StageCount)
+# 7/28/25: Updates to incorporate photoperiod code for species with photoperiod
+# 1/22/26: Minor updates previously; added code to produce NumGen rasters for
+# middle cohort in order to have a gridded outputs of num. gens only
+# 2026: Updates for moisture processing inc. dry and wet stress and
+# added photoperiod-cued diapause as presented in Grevstad et al. 2022 
+# (https://doi.org/10.1002/eap.2557).
+# TO DO: Replace exists("soil_moisture") and ("photo") - probably need to update 
+# cron files for all species but maybe there's another solution.
 
 # DDRP v3
 options(echo = FALSE)
 
 # Load the required packages
-pkgs <- c("doParallel", "dplyr", "foreach", "ggplot2", "ggthemes", 
-          "lubridate", "maps", "mgsub", "optparse", "parallel",
-          "purrr", "RColorBrewer", "readr", "sf", "terra",
-          "stringr", "tidyr", "tictoc", "tools", "toOrdinal")
+pkgs <- c("doParallel", "dplyr", "foreach", "ggplot2", "ggthemes", "lubridate", 
+          "maps", "optparse", "parallel","purrr", "RColorBrewer", "readr", "sf", 
+          "terra", "stringr", "tidyr", "tictoc", "tools", "toOrdinal", "viridis")
 ld_pkgs <- lapply(pkgs, library, 
                   lib.loc = "/usr/lib64/R/library/", character.only = TRUE)
 
 # Load collection of functions for this model
-source("/usr/local/dds/DDRP_B1/DDRP_v3_funcs.R")
+source("/usr/local/dds/DDRP_B1/DDRP_editing/DDRP_v3b_funcs.R")
 
 # Bring in states feature for summary maps (PNG files)
 # Requires these libraries: "mapdata" and "maptools"
@@ -36,30 +44,20 @@ tic("Total run time")
 ########  Tyson Wepprich for APHIS PPQ and IPM needs ###########################
 ################################################################################
 
-# DDRP v3 is an update from the previous version of DDRP (DDRP_v2.R)
-# It uses "terra" instead of "raster" and will eventually include moisture-processing
-# features. As in the previous version of DDRP, it has the following features:
-# 1. The ability to accomodate multiple population cohorts, in which a user-
-#    defined number of cohorts emerges from the overwintering stage at different
-#    times, such that a population in any given area could contain a mix of
-#    indidivuals in different life stages and generations
-# 2. Parallel processing, in which several processes are run in parallel in 
-#    order to speed up the model run (e.g., temperature raster cropping, 
-#    daily loop runs for multiple CONUS tiles and cohorts, production of raster 
-#    and summary map outputs)
-# 3. A new summary map type - Lifestage by Generation, which shows the relative
-#    population size of a specific life stage (currently only adults) for each 
-#    distinct generation (e.g., Gen1 adults, Gen 2 adults...)
-# 4. Other more minor improvements/features are included as well, such as: 
-#       a) the ability for summary maps to show a specific state or region of 
-#       interest. The previous version of DDRP can only show CONUS.
-#       b) the ability to generate summary maps for odd generations only. This 
-#       may be useful if there is a lot of spatial overlap between generations, 
-#       which would make it difficult to see where the boundaries of Gen1 and
-#       Gen 3 are, for example. 
-#       c) the use of a command line parser that includes parameter abbrevs.
-#       d) the ability to include or exclude leap day in the model run
-#       
+# DDRP v3 is an update from the previous version of DDRP (DDRP_v2.R) as
+# summarized below:
+# 1. It uses "terra" instead of "raster" for dealing with rasters
+# 2. Soil moisture is optionally included in the climatic suitability.
+#    model. So far, this has only been applied for Japanese beetle. New params
+#    are included for dry and wet stress (thresholds and limits). Code is 
+#    programmed to use estimates of surface (0-5 cm) soil moisture obtained 
+#    from NASA's soil moisture active passive (SMAP) L4 data product but could be
+#    easily modified to accept rootzone estimates (0-100 cm).
+# 3. Photoperiod factors from Grevstad et al. 2022 are included. Outputs have
+#    successfully been produced for Aphalara itadori but more test runs should
+#    be complete and the code double-checked for accuracy.
+# 4. Some large functions ("Plot_Map") have been broken into sub-functions to
+#    reduce code complexity and ease troubleshooting.
 #     
 # (1). PARAM HANDLING -----
 #### * Process command line args ####
@@ -81,6 +79,10 @@ option_list <- list(
               default = NA, help = "study region: CONUS, EAST, WEST, or 
               state (2-letter abbr.)"),
   make_option(c("--exclusions_stressunits"), type = "integer", action = "store",
+              default = NA, help = "0 = off, 1 = on"),
+  #make_option(c("--photo"), type = "integer", action = "store",
+  #            default = NA, help = "0 = off, 1 = on"),
+  make_option(c("--soil_moisture"), type = "integer", action = "store", 
               default = NA, help = "0 = off, 1 = on"),
   make_option(c("--pems"), type = "integer", action = "store", 
               default = NA, help = "0 = off, 1 = on"),
@@ -105,6 +107,7 @@ option_list <- list(
 
 # Read in commands 
 # If command line isn't used, then opts list elements will be NA
+# All species cron files need soil_moisture and photo arguments if applied below
 opts <- parse_args(OptionParser(option_list = option_list))
 if (!is.na(opts[1])) {
   spp <- opts$spp
@@ -115,6 +118,8 @@ if (!is.na(opts[1])) {
   keep_leap <- opts$keep_leap
   region_param <- opts$region_param
   exclusions_stressunits <- opts$exclusions_stressunits
+  #photo <- opts$photo
+  #soil_moisture <- opts$soil_moisture
   pems <- opts$pems
   mapA <- opts$mapA
   mapE <- opts$mapE
@@ -126,20 +131,22 @@ if (!is.na(opts[1])) {
   odd_gen_map <- opts$odd_gen_map
 } else {
   #### * Default values for params, if not provided in command line ####
-  spp           <- "SLF" # Default species to use
-  forecast_data <- "EOBS" # Forecast data to use (PRISM or NMME)
-  start_year    <- "2023" # Year to use
+  spp           <- "JPB2" # Default species to use
+  forecast_data <- "PRISM" # Forecast data to use (PRISM or NMME)
+  start_year    <- "2024" # Year to use
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
-  region_param  <- "EUROPE" # Region 
+  region_param  <- "P_NORTHWEST" # Region 
   exclusions_stressunits    <- 1 # Turn on/off climate stress unit exclusions
+  #photo         <- 0 # Turn on/off photoperiod
+  #soil_moisture <- 0 # Turn on/off moisture
   pems          <- 1 # Turn on/off pest event maps
   mapA          <- 1 # Make maps for adult stage
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "SLF_EUROPE" # Output dir
+  out_dir       <- "JPB_PNW" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -154,6 +161,8 @@ params_dir <- "/usr/local/dds/DDRP_B1/spp_params/"
 if (forecast_data == "PRISM") {
   base_dir <- "/data/PRISM/"
   # TO DO: add command line parameter for different GCMs
+} else if (forecast_data == "PRISM_800m") {
+  base_dir <- "/data/PRISM/800m/"
 } else if (forecast_data == "MACAV2") {
   gcm <- "GFDL-ESM2M" # TO DO: command line parameter
   base_dir <- paste0("/data/macav2metdata/", gcm, "/")
@@ -165,6 +174,27 @@ forecast_dir <- paste0(base_dir, start_year)
 
 cat("\nBASE DIR: ", base_dir, "\n")
 cat("\nWORKING DIR: ", forecast_dir, "\n")
+
+# Soil moisture directory if soil moisture is used
+#if (soil_moisture) {
+if (exists("soil_moisture")) {
+   # Consider putting soil moisture files in with Daymet and PRISM data?
+   if (forecast_data == "PRISM") {
+     sm_dir <- "/data/SMAP/CONUS"
+   } else if (forecast_data == "daymet") {
+     sm_dir <- "/data/SMAP/CONUSPLUS"
+   } else if (forecast_data == "EOBS") {
+     sm_dir <- "/data/SMAP/Europe"
+   }
+  
+  # If runs uses daily climate averages, must use only 10 yr for SMAP
+  # TO DO: consider putting SMAP files with temp files!
+  # (earlier years are unavailable)
+  if (grepl("yr", start_year)) {
+    sm_dir <- paste0(sm_dir, "/2024_daily_10yr")
+    start_year <- "10yr1524"
+  } 
+}
 
 #### * Output directory, log file, and error message file ####
 # MUST remove .tif files or script will crash during processing because it will 
@@ -345,10 +375,9 @@ j <- 1
 
 for (i in 1:length(stgorder)) {
   stg_nam <- stgorder[i]
-  stg_nam <- mgsub(string = stg_nam, # Requires "mgsub" package
-                   pattern = c("OE", "OL", "OP", "OA", "E", "L", "P", "A"), 
-                   replacement = c("egg", "larvae", "pupae", "adult", "egg", 
-                                   "larvae", "pupae", "adult"))
+  stg_nam <- str_replace_all(
+    stg_nam, c("OE" = "egg", "OL" = "larvae", "OP" = "pupae", "OA" = "adult",
+           "E" = "egg", "L" = "larvae", "P" = "pupae", "A" = "adult"))
   stage_ldt_val <- get(paste0(stg_nam, "LDT")) # returns LDT value for stage
   stage_ldt_list[[j]] <- stage_ldt_val
   stage_udt_val <- get(paste0(stg_nam, "UDT")) # returns UDT value for stage
@@ -363,10 +392,11 @@ j <- 1
 
 for (i in 1:length(stgorder)) {
   stg_nam <- stgorder[i]
-  stg_nam <- mgsub(string = stg_nam, 
-                   pattern = c("OE", "OL", "OP", "OA", "E", "L", "P", "A"), 
-                   replacement = c("OWegg", "OWlarvae", "OWpupae", "OWadult", 
-                                   "egg", "larvae", "pup", "adult"))
+  stg_nam <- str_replace_all(
+    stg_nam, c("OE" = "OWegg", "OL" = "OWlarvae", 
+           "OP" = "OWpupae", "OA" = "OWadult",
+           "E" = "egg", "L" = "larvae", "P" = "pup", "A" = "adult"))
+  
   stage_dd_val <- get(paste0(stg_nam, "DD")) # returns DD value for stage
   stage_dd_list[[j]] <- stage_dd_val
   j <- j + 1
@@ -436,22 +466,22 @@ cat("\nRun date and time:", strftime(Sys.time(), format = "%m/%d/%Y %H:%M"),
 
 # Document species information and method used to calculate degree-days
 cat("\n\n### Model Species Parameters ###\n Species Abbrev:", spp, 
-    "\n Full Name:", fullname, 
+    "\n Full name:", fullname, 
     "\n Pest of:", pestof,
-    "\n Overwintering Stage:", owstage, 
+    "\n Overwintering stage:", owstage, 
     "\n Degree-day calculation method:", calctype, 
     file = metadata, append = TRUE)
 
 # Document developmental threshold temperatures
 cat("\n \n Developmental threshold temperatures",
-    "\n Egg Lower Devel Threshold:", eggLDT, 
-    "\n Egg Upper Devel Threshold:", eggUDT, 
-    "\n Larvae Lower Devel Threshold:", larvaeLDT, 
-    "\n Larvae Upper Devel Threshold:", larvaeUDT, 
-    "\n Pupae Lower Devel Threshold:", pupaeLDT,
-    "\n Pupae Upper Devel Threshold:", pupaeUDT, 
-    "\n Adult Lower Devel Threshold:", adultLDT, 
-    "\n Adult Upper Devel Threshold:", adultUDT, file =metadata, append = TRUE)
+    "\n Egg lower devel threshold:", eggLDT, 
+    "\n Egg upper devel threshold:", eggUDT, 
+    "\n Larvae lower devel threshold:", larvaeLDT, 
+    "\n Larvae upper devel threshold:", larvaeUDT, 
+    "\n Pupae lower devel threshold:", pupaeLDT,
+    "\n Pupae upper devel threshold:", pupaeUDT, 
+    "\n Adult lower devel threshold:", adultLDT, 
+    "\n Adult upper devel threshold:", adultUDT, file =metadata, append = TRUE)
 
 # Document stage durations
 cat("\n\n Stage durations in degree-days (DDs)",
@@ -461,27 +491,48 @@ cat("\n\n Stage durations in degree-days (DDs)",
     "\n Adult DDs:", adultDD, 
     file = metadata, append = TRUE)
 
-# Document climate stress exclusion parameter values, if applicable
-if (exclusions_stressunits) {
-  cat("\n \n Climate stress parameters",
-      "\n Lower Cold Threshold:", coldstress_threshold, 
-      "\n Upper Heat Threshold:", heatstress_threshold,
-      "\n Max Cold Units (lower bound):", coldstress_units_max1, 
-      "\n Max Cold Units (upper bound):", coldstress_units_max2,
-      "\n Max Heat Stress Units (lower bound):", heatstress_units_max1,
-      "\n Max Heat Stress Units (upper bound):", heatstress_units_max2, 
-      file = metadata, append = TRUE)
-}
-
 # Document Pest Event Map parameter values, if applicable
 if (pems) {
   cat("\n \n Pest Event Map parameters",
   "\n Number of generations to make Pest Event Maps (PEMs): ", PEMnumgens,
-  "\n Egg Event DDs and Label: ", eggEventDD, " (", eggEventLabel,")", 
-  "\n Larvae Event DDs and Label: ", larvaeEventDD, " (", larvaeEventLabel, ")",
-  "\n Pupae Event DDs and Label: ", pupaeEventDD, " (", pupaeEventLabel, ")",
-  "\n Adult Event DDs and Label: ", adultEventDD, " (", adultEventLabel, ")",
+  "\n Egg event DDs and label: ", eggEventDD, " (", eggEventLabel,")", 
+  "\n Larvae event DDs and label: ", larvaeEventDD, " (", larvaeEventLabel, ")",
+  "\n Pupae event DDs and label: ", pupaeEventDD, " (", pupaeEventLabel, ")",
+  "\n Adult event DDs and label: ", adultEventDD, " (", adultEventLabel, ")",
   sep = "", file = metadata, append = TRUE)
+}
+
+# Document climate stress exclusion parameter values, if applicable
+if (exclusions_stressunits) {
+  cat("\n \n Climate stress parameters",
+      "\n Lower cold stress threshold:", coldstress_threshold, 
+      "\n Upper heat stress threshold:", heatstress_threshold,
+      "\n Max cold units (lower bound):", coldstress_units_max1, 
+      "\n Max cold units (upper bound):", coldstress_units_max2,
+      "\n Max heat stress units (lower bound):", heatstress_units_max1,
+      "\n Max heat stress units (upper bound):", heatstress_units_max2, 
+      file = metadata, append = TRUE)
+  if (exists("soil_moisture")) {
+
+  #if (soil_moisture) {
+    cat("\n Dry stress threshold:", drystress_threshold,
+      "\n Max dry stress units (lower bound):", drystress_units_max1,
+      "\n Max dry stress units (upper bound):", drystress_units_max2,
+      "\n Wet stress threshold:", wetstress_threshold,
+      "\n Max wet stress units (lower bound):", wetstress_units_max1,
+      "\n Max wet stress units (upper bound):", wetstress_units_max2,
+      file = metadata, append = TRUE)
+  }
+}
+
+# Document photoperiod parameter values, if applicable
+if (exists("photo")) {
+   cat("\n \n Photoperiod-cued Diapause Parameters",
+      "\n Photo-sensitive stage no.:", photo_sens, 
+      "\n Stage to finish to complete to survive winter:", diapstage,
+      "\n Critical photoperiod (mean):", crit_photo_mean,
+      "\n Critical photoperiod (standard deviation):", crit_photo_sd,
+      file = metadata, append = TRUE)
 }
 
 cat("\n\n### Model Input Parameters ###\n Start Year:", start_year, 
@@ -541,7 +592,7 @@ cat("\nDone writing metadata file\n\n", forecast_data, " DATA PROCESSING\n",
 # Loop through each needed variable and create a list of needed files
 vars <- c("tmin", "tmax")
 fls_list <- c("tminfiles", "tmaxfiles")
- 
+
 for (i in seq_along(vars)) {
   
   # Create list of files
@@ -579,9 +630,40 @@ for (i in seq_along(vars)) {
   
 }
 
+# Get soil moisture data if applied
+if (exists("soil_moisture")) {
+#if (soil_moisture) {
+  
+  # Need to change start year for sm if averages data (only 10yr avail.)
+  if (grepl("yr", start_year)) {
+    start_year_sm <- "10yr1524"
+  } else {
+    start_year_sm <- start_year
+  }
+  
+  #if (spp == "BRTE") {
+   #sm_pat <- paste0("*SMAP_sm_rootzone*", start_year_sm, "*.grd$*")
+  #} else {
+   sm_pat <- paste0("*SMAP_sm_surface*", start_year_sm, "*.grd$*")
+  #}
+
+  # Get  SMAPfiles
+  smfiles <- list.files(
+    path = sm_dir,
+    #pattern = glob2rx(paste0("*SMAP_sm_rootzone*", start_year_sm, "*.grd$*")),
+    pattern = glob2rx(paste0("*SMAP_sm_surface*", start_year_sm, "*.grd$*")), 
+    all.files = FALSE, full.names = TRUE, recursive = TRUE, ignore.case = TRUE
+  )
+  # Exit program if files are missing
+  if (length(smfiles) < length(sublist)) {
+    cat("Missing soil moisture files for one or more days - exiting program\n")
+    q()
+  }
+}
+
 ## Extract date from temperature files using regex pattern matching
-dats <- unique(regmatches(tminfiles, regexpr(pattern = "[0-9]{8}", 
-                                             text = tminfiles)))
+dats <- sort(unique(regmatches(tminfiles, regexpr(pattern = "[0-9]{8}", 
+                                             text = tminfiles))))
 
 # Specify sampling frequency (how many days until output maps are generated?)
 # This feature may be removed in production version
@@ -677,6 +759,19 @@ ncores <- detectCores()
 # TO DO: matrices may speed things up less now that "terra" has replaced "raster?" 
 RegCluster(round(ncores/8))
 
+# Log file and terminal messages
+if (exists("soil_moisture")) {
+#if (soil_moisture) {
+  cat("Cropping tmax, tmin, and sm data for", region_param, "\n", 
+      file = Model_rlogging, append = TRUE)
+  cat("\nCropping tmax, tmin, and sm data for", region_param, "\n")
+} else {
+  cat("Cropping tmax and tmin data for", region_param, "\n", 
+    file = Model_rlogging, append = TRUE)
+  cat("\nCropping tmax and tmin data for", region_param, "\n")
+}
+
+  
 if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
   
   # Split template (2 pieces per side)
@@ -686,10 +781,6 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
     filename = "tile_.tif") # Saves the 4 raster tiles
 
   # Crop temp files by each template tile
-  cat("Cropping tmax and tmin tiles for", region_param, "\n", 
-      file = Model_rlogging, append = TRUE)
-  cat("\nCropping tmax and tmin tiles for", region_param, "\n")
-  
    # Crop tmin to each tile
   tmin_list <- foreach(tile = tile_list, .packages = c("terra"),
                        .inorder = FALSE) %:% 
@@ -703,11 +794,19 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
        m <- as.matrix(crop(rast(tmax), ext(rast(tile))), wide = TRUE)
     }
   
+  # Crop soil moisture tiles (if applied)
+  if (exists("soil_moisture")) {
+  #if (soil_moisture) {
+    sm_list <- foreach(tile = tile_list, .packages = c("terra"),
+                       .inorder = FALSE) %:% 
+    foreach(sm = smfiles, .packages = c("terra"), .inorder = TRUE) %dopar% { 
+       m <- as.matrix(crop(rast(sm), ext(rast(tile))), wide = TRUE)
+    }
+  }
+  
 # If region is not large regions, simply crop temp files by the single template
 } else {
-  cat("Cropping tmax and tmin tiles for", region_param, "\n", 
-      file = Model_rlogging, append = TRUE)
-  cat("\nCropping tmax and tmin tiles for", region_param, "\n")
+  
   # Crop tmin to template extent (template is wrapped)
   tmin_list <- foreach(tmin = tminfiles, .packages = "terra") %dopar% {
     m <- as.matrix(crop(rast(tmin), ext(unwrap(template_w))), wide = TRUE)
@@ -717,11 +816,20 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
     m <- as.matrix(crop(rast(tmax), ext(unwrap(template_w))), wide = TRUE)
   }
 
+  # Crop soil moisture (if applied)
+  if (exists("soil_moisture")) {
+  #if (soil_moisture) {
+    sm_list <- foreach(sm = smfiles, .packages = "terra") %dopar% {
+      m <- as.matrix(crop(rast(sm), ext(unwrap(template_w))), wide = TRUE)
+    }
+  }
+  
 }
 
 stopCluster(cl)
 rm(cl)
 
+# Log file and terminal messages
 cat("Done processing ", forecast_data, " data\n\nDAILY LOOP\n", sep = "",
     file = Model_rlogging, append = TRUE)
 cat("\nDone processing ", forecast_data, " data\n\nDAILY LOOP\n", sep = "")
@@ -773,7 +881,7 @@ cat("\nSampling every", sample_freq, "days between", first(dats), "and",
 tryCatch(
   {
     
-    RegCluster(round(ncores/8)) # Change this value if server is overloaded
+    RegCluster(round(ncores/16)) # Change this value if server is overloaded
     
     # If the region is CONUS/EAST/N_AMERICA/EUROPE/CHINA, then both cohorts and 
     # tiles will be run in parallel. To avoid overloading the server, 
@@ -810,8 +918,10 @@ tryCatch(
         cat("\nRunning daily loop for cohorts", as.character(c), "\n")
         cohort_vec <- unname(unlist(c)) # change to an unnamed vector
         # Only need to run cohorts in parallel
-        foreach(cohort = cohort_vec, .packages = pkgs,
-                .inorder = FALSE) %dopar% {
+        # NOTE: export global env or "photo" and obligate_diapause" not detected 
+        # TO DO: other way to code these params?
+        foreach(cohort = cohort_vec, .packages = pkgs, 
+                .export = ls(globalenv()), .inorder = FALSE) %dopar% {
           DailyLoop(cohort, NA, template_w)
         }
         stopCluster(cl)
@@ -1037,11 +1147,8 @@ dats_list <- split(dats2, ceiling(seq_along(dats2)/(length(dats2)/4)))
 # degree-day accumulation, cold stress unit accumulation, cold stress 
 # exclusion, heat stress unit accumulation, heat stress exclusion, and all 
 # stress exclusion
-
 RegCluster(round(ncores/10))
 
-#for (dat in dats_list) {
-#  for (d in dat) {
 dd_stress_results <- foreach(dat = dats_list, .packages = pkgs, 
                          .inorder = TRUE) %:%
   foreach(d = unname(unlist(dat)), .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1077,17 +1184,43 @@ dd_stress_results <- foreach(dat = dats_list, .packages = pkgs,
         PlotMap(subset(rast("Heat_Stress_Excl.tif"), lyr), d, 
                 "Heat stress exclusion", "Exclusion status", 
                 "Misc_output/Heat_Stress_Excl")
-
+        
+        # Create plots for dry stress units and exclusions (if applied)
+        if (exists("soil_moisture"))  {
+        #if (soil_moisture) {
+          # Dry stress unit accumulation
+          PlotMap_stress(subset(rast("Dry_Stress_Units.tif"), lyr), d, 
+                         drystress_units_max1, drystress_units_max2, 
+                         "Dry stress units", "Dry Stress Units", 
+                         "Misc_output/Dry_Stress_Units")
+  
+          # Dry stress exlusions (-1 = moderate; -2 = severe)
+          PlotMap(subset(rast("Dry_Stress_Excl.tif"), lyr), d, 
+                  "Dry stress exclusion", "Exclusion status", 
+                  "Misc_output/Dry_Stress_Excl")
+        
+          # Wet stress unit accumulation
+          PlotMap_stress(subset(rast("Wet_Stress_Units.tif"), lyr), d, 
+                         wetstress_units_max1, wetstress_units_max2, 
+                         "Wet stress units", "Wet Stress Units", 
+                         "Misc_output/Wet_Stress_Units")
+  
+          # Wet stress exlusions (-1 = moderate; -2 = severe)
+          PlotMap(subset(rast("Wet_Stress_Excl.tif"), lyr), d, 
+                  "Wet stress exclusion", "Exclusion status", 
+                  "Misc_output/Wet_Stress_Excl")
+      }
+      
         # All stress exclusions (cold stress + heat stress exclusions)
         PlotMap(subset(rast("All_Stress_Excl.tif"), lyr), d, 
                 "All stress exclusion", "Exclusion status", "All_Stress_Excl")
       }
 }
-#}
 
 stopCluster(cl)
 rm(cl)
 
+#q()
 # Log messages
 if (exclusions_stressunits) {
   cat("\n\n", str_wrap("Done with DDtotal, climate stress exclusions, and 
@@ -1142,9 +1275,10 @@ rm(Lfstg, NumGen, StageCt) # Free up memory
 # that stages actually occur (life cycle steps)
 stg_vals <- data.frame("stg_name" = stgorder, "stg_num" = as.character(c(1:5))) 
 stg_vals <- stg_vals %>% 
-  mutate(stg_name = gsub("O", "", stg_name),
-         stg_name = mgsub(stg_name, c("E", "L", "P", "A"), 
-                          c("eggs", "larvae", "pupae", "adults")),
+  mutate(stg_code = gsub("O", "", stg_name),
+         stg_name = str_replace_all(
+           stg_code, c("E" = "eggs", "L" = "larvae", 
+                       "P" = "pupae", "A" = "adults")),
          life_cycle = case_when((stg_name == "eggs") ~ 1, 
                                 (stg_name == "larvae") ~ 2,
                                 (stg_name == "pupae") ~ 3,
@@ -1157,8 +1291,11 @@ stg_vals <- stg_vals %>%
 if (exclusions_stressunits) {
   
   # Tack on climate stress data onto stage values data frame
-  stg_vals <- rbind(data.frame(stg_name = c("excl.-moderate", "excl.-severe"), 
-                    life_cycle = c(-1, -2), stg_num = c(-1, -2)), stg_vals)
+  stg_vals <- rbind(
+    stg_vals, data.frame(stg_name = c("excl.-moderate", "excl.-severe"), 
+                         life_cycle = c(-1, -2), 
+                         stg_code = as.character(c(-1, -2)), 
+                         stg_num = as.character(c(-1, -2))))
   StageCt_excl1 <- rast(Rast_Subs_Excl(rast("StageCount.tif"), "Excl1")) 
   StageCt_excl2 <- rast(Rast_Subs_Excl(rast("StageCount.tif"), "Excl2"))
 
@@ -1202,7 +1339,7 @@ for (i in 1:length(StageCt_lst)) {
   fl <- StageCt_lst[i]
   
  #for (dat in dats_list) {
- #  for (d in unname(unlist(dat))) {
+  # for (d in unname(unlist(dat))) {
   foreach(dat = dats_list, .packages = pkgs, .inorder = TRUE) %:%
     foreach(d = unname(unlist(dat)), 
             .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1233,11 +1370,6 @@ for (i in 1:length(StageCt_lst)) {
         filter(gen == 0) %>%
         mutate(value = paste("OW gen.", stg_name))
       
-      # Filter out climate stress values to tack on after formatting other data
-      excl_df <- StageCt_df %>% 
-        filter(value < 0) %>%
-        mutate(gen_stg = ifelse(value == -2, -2, -1))
-      
       # Format data frame differently depending on number of completed gens.    
       if (any(StageCt_df$gen > 0)) {
         StageCt_df2 <- StageCt_df %>% 
@@ -1251,8 +1383,13 @@ for (i in 1:length(StageCt_lst)) {
         StageCt_df2 <- OW_gen
       }
       
-      # Add climate stress values back in
+      # Some additional processing if climate stress exclusions
       if (exclusions_stressunits) {
+        # Filter out climate stress values to tack on after formatting other data
+        excl_df <- StageCt_df %>% 
+          filter(value < 0) %>%
+          mutate(gen_stg = ifelse(value == -2, -2, -1))
+        # Add climate stress values back in
         StageCt_df2 <- rbind(StageCt_df2, excl_df)
       }
       
@@ -1463,13 +1600,12 @@ if (pems) {
   stopCluster(cl)
   rm(cl)
   
+  # Remove PEM objects to free up memory, and delete 
+  # PEM cohort rasters now that they have been processed
+  unlink(list.files(pattern = glob2rx(paste0("*PEM*cohort*"))))
+  rm(list = ls(pattern = "PEM|pem_")) 
 }
 
-# Remove PEM objects to free up memory, and delete 
-# PEM cohort rasters now that they have been processed
-unlink(list.files(pattern = glob2rx(paste0("*PEM*cohort*"))))
-rm(list = ls(pattern = "PEM|pem_")) 
-  
 # Log file messages
 if (pems & exclusions_stressunits) {
   cat("\n\nDone with Pest Event Maps\n\n", str_wrap("### WEIGHTED RASTER AND 
@@ -1522,10 +1658,10 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
 #for (stg in stage_list) {
   #print(stg)
   # Get stage number of stage, and then rename to a more descriptive name
-  stg_nam <- mgsub(string = stg, pattern = 
-                     c("OE", "OL", "OP", "OA", "E", "L", "P", "A"), 
-                   replacement = c("OWegg", "OWlarvae", "OWpupae", "OWadult",
-                                   "Egg", "Larvae", "Pupae", "Adult"))
+  stg_nam <- str_replace_all(
+    stg, c("OE" = "OWegg", "OL" = "OWlarvae", 
+           "OP" = "OWpupae", "OA" = "OWadult",
+           "E" = "Egg", "L" = "Larvae", "P" = "Pupae", "A" = "Adult"))
 
   if (stg != stg_nonOW) {
     
@@ -1541,7 +1677,7 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
     SaveRaster2(Lfstg_wtd, paste0("Misc_output/", stg_nam),   
                 paste("-", stg_nam, "relative pop. size for all", 
                       num_dats, "dates"), "FLT4S") 
-
+    
     # Create and save summary maps
     Lfstg_plots <- foreach(lyr = 1:nlyr(Lfstg_wtd), 
                            .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -1610,8 +1746,8 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
   # Match overwintering stage to actual stage (e.g. OA = A, OE = E, etc.)
   } else if (stg == stg_nonOW) {
     stg_num <- match(stg_nonOW, stgorder) # Get stage no. of non-OW stage
-    stg_nonOW_nam <- mgsub(string = stg_nonOW, pattern = c("E", "L", "P", "A"), 
-                           replacement = c("Egg", "Larvae", "Pupae", "Adult"))
+    stg_nonOW_nam <- str_replace_all(
+      stg_nonOW, c("E" = "Egg", "L" = "Larvae", "P" = "Pupae", "A" = "Adult"))
     
     # Weight the rasters to get relative population size of the stage in the
     # population, and save and plot results. The Weight_rasts function is
@@ -1714,7 +1850,7 @@ if (exclusions_stressunits) {
 # Note that each generation is output to it's own multi-layered raster file, 
 # whereas the summary plots show every generation on a given date. There will 
 # likely be some overlap between generations, and showing this is not possible
-# if a raster combined mulitple generations.
+# if a raster combined multiple generations.
 
 # Calculate the maximum number of generations over sampled period 
 # Split out NumGen raster by generation and save 
@@ -1739,6 +1875,40 @@ foreach(i = 0:maxgens, .packages = pkgs) %:%
 
 stopCluster(cl)
 rm(cl)
+
+# Save raster with average number of annual generations across cohorts
+# This produced a multi-layer raster (for each sampling date) with the number
+# of completed generations, on average.
+NumGen_avg <- rast(NumGen_fls[middle_cohort])
+names(NumGen_avg) <- dats2
+SaveRaster2(NumGen_avg, "Avg_NumGen",
+            paste("- Avg. num gens for all", num_dats, "dates"), "FLT4S")
+  
+# Overlay the all Stress Exclusion raster with this Avg. NumGen raster 
+if (exclusions_stressunits) {
+    
+  # NumGenEXCL1
+  NumGen_avg_excl1 <- rast(Rast_Subs_Excl(NumGen_avg, "Excl1"))
+  SaveRaster2(
+    NumGen_avg_excl1, paste("Misc_output/Avg_NumGen_Excl1", sep = "_"), 
+    str_wrap(
+      paste("- Avg. num gens with severe climate stress excl. for all", 
+            num_dats, "dates"), width = 80), "FLT4S")
+    cat("Finished NumGen_Avg_Excl1\n")
+     
+  # NumGenEXCL2  
+  NumGen_avg_excl2 <- rast(Rast_Subs_Excl(NumGen_avg, "Excl2"))
+  rm(NumGen_avg) # Free up memory
+  SaveRaster2(
+    NumGen_avg_excl2, paste("Misc_output/Avg_NumGen_Excl2", sep = "_"), 
+    str_wrap(
+      paste("- Avg. num gens with severe and moderate climate stress excl. 
+            for all", num_dats, "dates"), width = 80), "FLT4S")
+  rm(list = c("NumGen_avg_excl1", "NumGen_avg_excl2")) # Free up memory
+  cat("Finished NumGen_Avg_Excl2\n")
+}
+
+rm(NumGen_avg) # Free up memory
 
 # Delete NumGen rasters - no longer needed
 unlink(list.files(pattern = glob2rx(paste0("*NumGen*cohort*"))))
@@ -1806,7 +1976,7 @@ stopCluster(cl)
 rm(cl)
 
 # Delete cohort rasters split by generation - no longer needed
-unlink(list.files(pattern = glob2rx(paste0("*Gen_*cohort*"))))
+unlink(list.files(pattern = glob2rx(paste0("*^Gen_*cohort*"))))
 
 ### * Create summary maps of NumGen results, weighted across cohorts
 
@@ -1842,26 +2012,25 @@ if (odd_gen_map == 1) {
 # (NumGenExcl1 and NumGenExcl2); otherwise the process is very, very slow.
 
 # Make the list of files to stack by type
-NumGen_fls <- list(list.files(paste0(getwd(), "/Misc_output"), 
-                           pattern = glob2rx("*Gen_*.tif$")))
+NumGen_fls <- list(
+  list.files("./Misc_output", pattern = glob2rx("*Gen_*.tif$"), 
+             full.names = TRUE))
 
 if (exclusions_stressunits) {
-  NumGen_fls <-  append(
-    NumGen_fls, list(list.files(paste0(getwd(), "/Misc_output"), 
-                                pattern = glob2rx("*GenExcl1_*.tif$")),
-                     list.files(paste0(getwd(), "/Misc_output"), 
-                                pattern = glob2rx("*GenExcl2_*.tif$"))))
+  NumGen_fls <-  append(NumGen_fls, list(
+    list.files("./Misc_output", pattern = glob2rx("*GenExcl1_*.tif$"), 
+               full.names = TRUE),
+    list.files("./Misc_output", pattern = glob2rx("*GenExcl2_*.tif$"), 
+               full.names = TRUE)))
   names(NumGen_fls) <- c("NumGen", "NumGenExcl1", "NumGenExcl2")
 } else {
  names(NumGen_fls) <- c("NumGen")
 }
 
-# Add directory ("Misc_output/") to every element in the list
-NumGen_fls[] <- lapply(NumGen_fls, function(x) paste0("Misc_output/", x))
-
 # For each type (NumGen, NumGenExcl1, NumGenExcl2), stack all 
 # generations together and write the results to file
 if (exclusions_stressunits) {
+  
   RegCluster(round(ncores/10))
 
   foreach(i = 1:length(NumGen_fls), .packages = pkgs, .inorder = TRUE) %dopar% {
@@ -2267,8 +2436,7 @@ mskGenAdult <- foreach(gen = 0:maxgens,
 stopCluster(cl)
 rm(cl)
 
-# Delete "NumGen...all_merged" files - they are very large
-NumGen_mrgd_fls
+# Delete "NumGen...all_merged" files - they are very large and not needed
 invisible(file.remove(unlist(NumGen_mrgd_fls)))
 
 # All done - print messages and stop clusters  
@@ -2414,6 +2582,96 @@ cat("\n\nDone with Lifestage with NumGen summary maps\n",
     file = Model_rlogging, append = TRUE)
 cat("\nDone with Lifestage with NumGen summary maps\n")
 
+#### * Diapause/mismatch ####
+# For species with photoperiod-cued diapause
+# AttVolt, Voltinism, and Diapause need to be /1000 first
+if (exists("photo")) {
+  
+  ### * Create summary maps of Diapause results, weighted across cohorts
+  cat("\n### SUMMARY MAP OUTPUT - Diapause results ###\n\n", file=Model_rlogging, 
+      append=TRUE)
+  cat("\nSUMMARY MAP OUTPUT - Diapause results\n")
+  
+  # Get output files
+  FullGen_fls <- list.files(pattern = glob2rx("*FullGen_*.tif$"))
+  AttVolt_fls <- list.files(pattern = glob2rx("*AttVolt_*.tif$"))
+  Diapause_fls <- list.files(pattern = glob2rx("*Diapause_*.tif$"))
+  Mismatch_fls <- list.files(pattern = glob2rx("*Mismatch_*.tif$"))
+    
+  # Calculate the highest generation to occur across all FullGen and AttVolt
+  # rasters, and then take the highest generation across both
+  maxgens_ful <- max(unlist(lapply(FullGen_fls, function(x) { 
+    max(unique(values(rast(x))), na.rm = TRUE) }))) # Max value - FullGen
+  maxgens_att <- max(unlist(lapply(AttVolt_fls, function(x) { 
+    max(unique(values(rast(x)/1000)), na.rm = TRUE) }))) # Max value - AttVolt
+  maxgens_both <- ceiling(round(maxgens_ful, maxgens_att)) # Max value - both
+  
+  # Names for rasters and plots (four types of outputs)
+  Diap_outfls <- c("FullGen", "AttVolt", "Diapause", "Mismatch")
+  rast_units <- c("INT2U", "INT2U", "INT2U", "INT2S")
+  Diap_titls <- c("Potential voltinism", "Attempted voltinism", 
+                  "Chose to diapause", "Voltinism mismatch")
+  Diap_lgds <- c("Generations", "Generations", "% in Diapause", "Mismatch")
+  
+  # Weight and save diapause rasters
+  Diap_infls <- list(FullGen_fls, AttVolt_fls, Diapause_fls, Mismatch_fls)
+
+  RegCluster(round(ncores/6))
+  # Create and save summary maps
+  # TO DO: Nested "foreach" loop won't work - gives this error:
+  # "[rast] cannot open this file as a Spatraster: FullGen.tif"
+  foreach(i = 1:length(Diap_infls), .packages = pkgs, .inorder = TRUE) %dopar% {
+  #for (i in 1:length(Diap_infls)) {
+    # Weight across cohorts and save raster
+    Diap_wtd <- Weight_rasts(Diap_infls[[i]], Diap_outfls[i])
+    SaveRaster2(Diap_wtd, paste0("Misc_output/", Diap_outfls[i]),
+                str_wrap(paste("-", Diap_outfls[i], "for all",
+                               num_dats, "dates"), width = 80), rast_units[i])
+  
+    if (exclusions_stressunits) {
+      # Moderate and severe stress exclusions
+      Diap_wtd_excl1 <- rast(Rast_Subs_Excl(Diap_wtd, "Excl1"))
+      Diap_wtd_excl2 <- rast(Rast_Subs_Excl(Diap_wtd, "Excl2")) 
+    }
+    
+  #foreach(i = 1:length(Diap_fls), .packages = pkgs, .inorder = TRUE) %dopar% {
+  #  foreach(d = dats2, .packages = pkgs, .inorder = TRUE) %dopar% {
+    # Make plots 
+    for (d in dats2) {
+      lyr <- which(dats2 == d)
+      PlotMap(subset(Diap_wtd, lyr), d, Diap_titls[i],
+              Diap_lgds[i], Diap_outfls[i])
+      #}
+      # With climate stress exclusions if applicable (moderate and severe)
+      if (exclusions_stressunits) {
+        PlotMap(subset(Diap_wtd_excl1, lyr), d, 
+                paste0(Diap_titls[i], " w/ climate stress exclusion"),
+                Diap_lgds[i], paste0(Diap_outfls[i], "_Excl1"))
+        PlotMap(subset(Diap_wtd_excl2, lyr), d, 
+                paste0(Diap_titls[i], " w/ climate stress exclusion"),
+                Diap_lgds[i], paste0(Diap_outfls[i], "_Excl2"))
+      }
+    }
+  }
+  # Delete Diapause rasters - no longer needed
+  unlink(list.files(pattern = "cohort"))
+  stopCluster(cl)
+  rm(cl)
+  
+  # Log file messages
+  if (exclusions_stressunits) {
+      cat("\n\n", str_wrap("Done with raster and summary map outputs for 
+        Diapause results w/ climate stress excl.", width = 80), 
+      file = Model_rlogging, sep = "", append = TRUE) 
+    cat("\n", str_wrap("Done with raster and summary map outputs for 
+                       Diapause results w/ climate stress excl.", width = 80), sep = "")
+  } else {
+    cat("\n\nDone with raster and summary map outputs for Diapause results\n", 
+      file = Model_rlogging, append = TRUE)
+    cat("\nDone with raster and summary map outputs for Diapause results\n")
+  }
+}
+
 #### * Analyses and map production all done - wrap-up ####
 processing_exectime <- toc(quiet = TRUE)
 processing_exectime <- (processing_exectime$toc - processing_exectime$tic) / 60 
@@ -2434,8 +2692,7 @@ cat("\nDone w/ final analyses and map production\n\n",
 # Create list of files that will be kept in the main output folder. These 
 # include outputs for the last day of the sampled time period, with the 
 # exception of Stage Count outputs.
-last_dat_fls <- list.files(pattern = glob2rx(paste0("*", last(dats2), 
-                                                    "*.png$")))
+last_dat_fls <- list.files(pattern =glob2rx(paste0("*", last(dats2), "*.png$")))
 stgCnt_remove <- grep(pattern = glob2rx(paste0("*StageCount*", last(dats2), 
                                               "*")), last_dat_fls, value = TRUE)
 last_dat_fls <- last_dat_fls[!last_dat_fls %in% stgCnt_remove]
