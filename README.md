@@ -42,7 +42,7 @@ Priority Pest List](https://approvedmethods.ceris.purdue.edu/), six were
 formerly included on the list, and two are Federal Program Pests.
 
 | Species | Common name | Abbrev | Present in United States | National Priority Pest | Federal Program Pest |
-|:-------------|:-------------|:--------------:|:------------:|:------------:|
+|:-------------|:-------------|:--------------:|:--------------:|:------------:|:------------:|
 | *Anoplophora glabripennis* | Asian longhorned beetle | ALB | Yes | Yes | Yes |
 | *Chilo suppressalis* | Asiatic rice borer | ASRB | No | Yes | No |
 | *Cryptoblabes gnidiella* | Christmas berry webworm | CGN | | No | Yes | No |
@@ -120,7 +120,7 @@ data. The platform now includes four climate stresses: cold stress, heat
 stress, dry stress, and wet stress. To date, only the Japanese beetle
 model (JPB2.params) includes the moisture-related stress parameters. 5)
 Maps of attempted vs. realized voltinism in insect species with a
-short-day diapause response (Grevstad et
+short-day diapause response [(Grevstad et
 al. 2022)](https://doi.org/10.1002/eap.2557). The difference between
 the attempted and potential generations represents a quantitative
 measure of phenological mismatch between diapause timing and the end of
@@ -142,7 +142,7 @@ provides information on program requirements, input data, input options,
 examples of command line arguments, types of output files, and run
 times.
 
-##💡 Philosophy
+## 💡 Philosophy
 
 Our development of DDRP has strived to achieve a parsimonious balance of
 both model simplicity and accuracy, with a focus on four philosophies: 
