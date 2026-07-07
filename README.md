@@ -136,9 +136,8 @@ because we designed the code to be run from the command line on a Linux
 server. The program can also be run on a Windows system but parallel
 processing capabilities will be limited. The [user
 manual](https://github.com/bbarker505/ddrp_v3/blob/main/manual/DDRP_user_guide_and_platform_requirements_V5.doc)
-(Coop and Barker 2024)
-“DDRP_user_guide_and_platform_requirements_V5.doc” is the only
-instruction document that is currently available The instruction manual
+(Coop and Barker 2024) for DDRP_v2.R is currently the only
+instruction document available (new version in progress). The instruction manual
 provides information on program requirements, input data, input options,
 examples of command line arguments, types of output files, and run
 times.
