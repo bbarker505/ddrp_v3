@@ -38,15 +38,15 @@ for the 18 pest species with models are included in the repository with names
 that correspond to the species abbreviations in Table 1.
 
 **Table 1**. The 18 invasive insect species with DDRP models are shown
-below. Five species are established in CONUS, 12 are on PPQ's [National
-Priority Pest List](https://approvedmethods.ceris.purdue.edu/), six were
-formerly included on the list, and two are Federal Program Pests.
+below. Five species are established in the contiguous U.S., 12 are on PPQ's 
+[National Priority Pest List](https://approvedmethods.ceris.purdue.edu/), six 
+were formerly included on the list, and two are Federal Program Pests.
 
 | Species | Common name | Abbrev | Present in United States | National Priority Pest | Federal Program Pest |
 |:-------------|:-------------|:--------------:|:--------------:|:------------:|:------------:|
 | *Anoplophora glabripennis* | Asian longhorned beetle | ALB | Yes | Yes | Yes |
 | *Chilo suppressalis* | Asiatic rice borer | ASRB | No | Yes | No |
-| *Cryptoblabes gnidiella* | Christmas berry webworm | CGN | | No | Yes | No |
+| *Cryptoblabes gnidiella* | Christmas berry webworm | CGN | No | No | Yes | No |
 | *Spodoptera litura* | Common or cotton cutworm | SLI | No | Yes | No |
 | *Agrilus planipennis* | Emerald ash borer | EAB | Yes | No | No |
 | *Spodoptera littoralis* | Egyptian cottonworm | ECW | No | No | No |
