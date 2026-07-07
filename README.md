@@ -34,7 +34,8 @@ days) forecasts for 18 high-priority invasive insect species, available
 at [USPest.org](http://uspest.org/CAPS) (Table 1). Forecasts for several
 pests are also available as Pheno Forecasts at the [USA National
 Phenology Network](https://www.usanpn.org/data/maps/forecasts). Parameter files 
-for the 18 pest species with models (Table 1) are included in the repository.
+for the 18 pest species with models are included in the repository with names
+that correspond to the species abbreviations in Table 1.
 
 **Table 1**. The 18 invasive insect species with DDRP models are shown
 below. Five species are established in CONUS, 12 are on PPQ's [National
