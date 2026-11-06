@@ -13,8 +13,7 @@
 # 2026: Updates for moisture processing inc. dry and wet stress and
 # added photoperiod-cued diapause as presented in Grevstad et al. 2022 
 # (https://doi.org/10.1002/eap.2557).
-# TO DO: Replace exists("soil_moisture") and ("photo") - probably need to update 
-# cron files for all species but maybe there's another solution.
+# 11/6/26: Updated cron files with soil_moisture command
 
 # DDRP v3
 options(echo = FALSE)
@@ -27,7 +26,7 @@ ld_pkgs <- lapply(pkgs, library,
                   lib.loc = "/usr/lib64/R/library/", character.only = TRUE)
 
 # Load collection of functions for this model
-source("/usr/local/dds/DDRP_B1/DDRP_editing/DDRP_v3b_funcs.R")
+source("/usr/local/dds/DDRP_B1/DDRP_v3.1_funcs.R")
 
 # Bring in states feature for summary maps (PNG files)
 # Requires these libraries: "mapdata" and "maptools"
@@ -44,20 +43,31 @@ tic("Total run time")
 ########  Tyson Wepprich for APHIS PPQ and IPM needs ###########################
 ################################################################################
 
-# DDRP v3 is an update from the previous version of DDRP (DDRP_v2.R) as
-# summarized below:
-# 1. It uses "terra" instead of "raster" for dealing with rasters
-# 2. Soil moisture is optionally included in the climatic suitability.
-#    model. So far, this has only been applied for Japanese beetle. New params
-#    are included for dry and wet stress (thresholds and limits). Code is 
-#    programmed to use estimates of surface (0-5 cm) soil moisture obtained 
-#    from NASA's soil moisture active passive (SMAP) L4 data product but could be
-#    easily modified to accept rootzone estimates (0-100 cm).
-# 3. Photoperiod factors from Grevstad et al. 2022 are included. Outputs have
-#    successfully been produced for Aphalara itadori but more test runs should
-#    be complete and the code double-checked for accuracy.
-# 4. Some large functions ("Plot_Map") have been broken into sub-functions to
-#    reduce code complexity and ease troubleshooting.
+# DDRP v3.1 is an update from the previous version of DDRP (DDRP_v2.R)
+# It uses "terra" instead of "raster" and includes photoperiod 
+# (Grevstad et al. 2022, doi: ) and moisture-processing features. 
+# As in the previous version of DDRP, it has the following features:
+# 1. The ability to accomodate multiple population cohorts, in which a user-
+#    defined number of cohorts emerges from the overwintering stage at different
+#    times, such that a population in any given area could contain a mix of
+#    indidivuals in different life stages and generations
+# 2. Parallel processing, in which several processes are run in parallel in 
+#    order to speed up the model run (e.g., temperature raster cropping, 
+#    daily loop runs for multiple CONUS tiles and cohorts, production of raster 
+#    and summary map outputs)
+# 3. A new summary map type - Lifestage by Generation, which shows the relative
+#    population size of a specific life stage (currently only adults) for each 
+#    distinct generation (e.g., Gen1 adults, Gen 2 adults...)
+# 4. Other more minor improvements/features are included as well, such as: 
+#       a) the ability for summary maps to show a specific state or region of 
+#       interest. The previous version of DDRP can only show CONUS.
+#       b) the ability to generate summary maps for odd generations only. This 
+#       may be useful if there is a lot of spatial overlap between generations, 
+#       which would make it difficult to see where the boundaries of Gen1 and
+#       Gen 3 are, for example. 
+#       c) the use of a command line parser that includes parameter abbrevs.
+#       d) the ability to include or exclude leap day in the model run
+#       
 #     
 # (1). PARAM HANDLING -----
 #### * Process command line args ####
@@ -80,8 +90,8 @@ option_list <- list(
               state (2-letter abbr.)"),
   make_option(c("--exclusions_stressunits"), type = "integer", action = "store",
               default = NA, help = "0 = off, 1 = on"),
-  #make_option(c("--photo"), type = "integer", action = "store",
-  #            default = NA, help = "0 = off, 1 = on"),
+  make_option(c("--photo"), type = "integer", action = "store",
+              default = NA, help = "0 = off, 1 = on"),
   make_option(c("--soil_moisture"), type = "integer", action = "store", 
               default = NA, help = "0 = off, 1 = on"),
   make_option(c("--pems"), type = "integer", action = "store", 
@@ -107,7 +117,6 @@ option_list <- list(
 
 # Read in commands 
 # If command line isn't used, then opts list elements will be NA
-# All species cron files need soil_moisture and photo arguments if applied below
 opts <- parse_args(OptionParser(option_list = option_list))
 if (!is.na(opts[1])) {
   spp <- opts$spp
@@ -119,7 +128,7 @@ if (!is.na(opts[1])) {
   region_param <- opts$region_param
   exclusions_stressunits <- opts$exclusions_stressunits
   #photo <- opts$photo
-  #soil_moisture <- opts$soil_moisture
+  soil_moisture <- opts$soil_moisture
   pems <- opts$pems
   mapA <- opts$mapA
   mapE <- opts$mapE
@@ -137,16 +146,16 @@ if (!is.na(opts[1])) {
   start_doy     <- 1 # Start day of year          
   end_doy       <- 365 # End day of year - need 365 if voltinism map 
   keep_leap     <- 1 # Should leap day be kept?
-  region_param  <- "P_NORTHWEST" # Region 
+  region_param  <- "NORTHEAST" # Region 
   exclusions_stressunits    <- 1 # Turn on/off climate stress unit exclusions
   #photo         <- 0 # Turn on/off photoperiod
-  #soil_moisture <- 0 # Turn on/off moisture
+  soil_moisture <- 0 # Turn on/off moisture
   pems          <- 1 # Turn on/off pest event maps
   mapA          <- 1 # Make maps for adult stage
   mapE          <- 1 # Make maps for egg stage
   mapL          <- 1 # Make maps for larval stage
   mapP          <- 1 # Make maps for pupal stage
-  out_dir       <- "JPB_PNW" # Output dir
+  out_dir       <- "ALB_test2" # Output dir
   out_option    <- 1 # Sampling frequency
   ncohort       <- 7 # Number of cohorts to approximate end of OW stage
   odd_gen_map   <- 0 # Create summary plots for odd gens only (gen1, gen3, ..)
@@ -176,8 +185,7 @@ cat("\nBASE DIR: ", base_dir, "\n")
 cat("\nWORKING DIR: ", forecast_dir, "\n")
 
 # Soil moisture directory if soil moisture is used
-#if (soil_moisture) {
-if (exists("soil_moisture")) {
+if (soil_moisture == 1) {
    # Consider putting soil moisture files in with Daymet and PRISM data?
    if (forecast_data == "PRISM") {
      sm_dir <- "/data/SMAP/CONUS"
@@ -512,9 +520,8 @@ if (exclusions_stressunits) {
       "\n Max heat stress units (lower bound):", heatstress_units_max1,
       "\n Max heat stress units (upper bound):", heatstress_units_max2, 
       file = metadata, append = TRUE)
-  if (exists("soil_moisture")) {
-
-  #if (soil_moisture) {
+  # Dry and wet stress parameter values, if applicable
+  if (soil_moisture == 1) {
     cat("\n Dry stress threshold:", drystress_threshold,
       "\n Max dry stress units (lower bound):", drystress_units_max1,
       "\n Max dry stress units (upper bound):", drystress_units_max2,
@@ -625,14 +632,13 @@ for (i in seq_along(vars)) {
     #fls_best <- fls[start_doy:end_doy]
     fls_best <- fls
   }
-  
+
   assign(fls_list[i], fls_best)
   
 }
 
 # Get soil moisture data if applied
-if (exists("soil_moisture")) {
-#if (soil_moisture) {
+if (soil_moisture == 1) {
   
   # Need to change start year for sm if averages data (only 10yr avail.)
   if (grepl("yr", start_year)) {
@@ -760,8 +766,7 @@ ncores <- detectCores()
 RegCluster(round(ncores/8))
 
 # Log file and terminal messages
-if (exists("soil_moisture")) {
-#if (soil_moisture) {
+if (soil_moisture == 1) {
   cat("Cropping tmax, tmin, and sm data for", region_param, "\n", 
       file = Model_rlogging, append = TRUE)
   cat("\nCropping tmax, tmin, and sm data for", region_param, "\n")
@@ -771,7 +776,6 @@ if (exists("soil_moisture")) {
   cat("\nCropping tmax and tmin data for", region_param, "\n")
 }
 
-  
 if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
   
   # Split template (2 pieces per side)
@@ -781,7 +785,7 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
     filename = "tile_.tif") # Saves the 4 raster tiles
 
   # Crop temp files by each template tile
-   # Crop tmin to each tile
+  # Crop tmin to each tile
   tmin_list <- foreach(tile = tile_list, .packages = c("terra"),
                        .inorder = FALSE) %:% 
     foreach(tmin = tminfiles, .packages = c("terra"), .inorder = TRUE) %dopar% {
@@ -793,10 +797,9 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
     foreach(tmax = tmaxfiles, .packages = c("terra"), .inorder = TRUE) %dopar% { 
        m <- as.matrix(crop(rast(tmax), ext(rast(tile))), wide = TRUE)
     }
-  
+
   # Crop soil moisture tiles (if applied)
-  if (exists("soil_moisture")) {
-  #if (soil_moisture) {
+  if (soil_moisture == 1) {
     sm_list <- foreach(tile = tile_list, .packages = c("terra"),
                        .inorder = FALSE) %:% 
     foreach(sm = smfiles, .packages = c("terra"), .inorder = TRUE) %dopar% { 
@@ -817,8 +820,7 @@ if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
   }
 
   # Crop soil moisture (if applied)
-  if (exists("soil_moisture")) {
-  #if (soil_moisture) {
+  if (soil_moisture == 1) {
     sm_list <- foreach(sm = smfiles, .packages = "terra") %dopar% {
       m <- as.matrix(crop(rast(sm), ext(unwrap(template_w))), wide = TRUE)
     }
@@ -1186,8 +1188,7 @@ dd_stress_results <- foreach(dat = dats_list, .packages = pkgs,
                 "Misc_output/Heat_Stress_Excl")
         
         # Create plots for dry stress units and exclusions (if applied)
-        if (exists("soil_moisture"))  {
-        #if (soil_moisture) {
+        if (soil_moisture == 1) {
           # Dry stress unit accumulation
           PlotMap_stress(subset(rast("Dry_Stress_Units.tif"), lyr), d, 
                          drystress_units_max1, drystress_units_max2, 
@@ -1220,7 +1221,6 @@ dd_stress_results <- foreach(dat = dats_list, .packages = pkgs,
 stopCluster(cl)
 rm(cl)
 
-#q()
 # Log messages
 if (exclusions_stressunits) {
   cat("\n\n", str_wrap("Done with DDtotal, climate stress exclusions, and 
@@ -1677,7 +1677,7 @@ foreach(stg = stage_list, .packages = pkgs) %dopar% {
     SaveRaster2(Lfstg_wtd, paste0("Misc_output/", stg_nam),   
                 paste("-", stg_nam, "relative pop. size for all", 
                       num_dats, "dates"), "FLT4S") 
-    
+
     # Create and save summary maps
     Lfstg_plots <- foreach(lyr = 1:nlyr(Lfstg_wtd), 
                            .packages = pkgs, .inorder = TRUE) %dopar% {

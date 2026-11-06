@@ -264,8 +264,7 @@ DailyLoop <- function(cohort, tile_num, template) {
     
     # Soil moisture applied for species 
     # Maybe TO DO: need additional params if precip or humidity incorporated into models?
-    if (exists("soil_moisture")) {
-    #if (soil_moisture) {
+    if (soil_moisture == 1) {
       drymask          <- as.matrix(templ, wide = TRUE)  # Daily dry stress units mask
       drystress        <- as.matrix(templ, wide = TRUE)  # Count of daily dry stress units
       drystressTHRESH  <- drystress_threshold # Mask for drystress_sm units thres
@@ -400,16 +399,17 @@ DailyLoop <- function(cohort, tile_num, template) {
     if (region_param %in% c("CONUS", "EAST", "N_AMERICA", "EUROPE", "CHINA")) {
       tmax <- as.numeric(tmax_list[[tile_num]][[d]])
       tmin <- as.numeric(tmin_list[[tile_num]][[d]])
-      if (exists("soil_moisture")) {
-      #if (soil_moisture) {
+     # Get soil moisture matrices for data if applied
+      if (soil_moisture == 1) {
         sm <- as.numeric(sm_list[[tile_num]][[d]])
       }
     } else {
+      # Temperature
       tmax <- as.numeric(tmax_list[[d]])
       tmin <- as.numeric(tmin_list[[d]])
       
-      if (exists("soil_moisture")) {
-      #if (soil_moisture) {
+      # Soil moisture if applied
+      if (soil_moisture == 1) {
         sm <- as.numeric(sm_list[[d]])
       }
     }
@@ -471,8 +471,7 @@ DailyLoop <- function(cohort, tile_num, template) {
                        Cond(heatunitsCUM >= heatstressMAX1, -1, 0))
 
       # Dry and wet stress accumulation (if applied)
-      if (exists("soil_moisture")) {
-      #if (soil_moisture) {
+      if (soil_moisture == 1) {
         
         # Make today's dry mask and calculate today's dry stress DDs
         drymask <- sm < drystressTHRESH  
@@ -794,8 +793,7 @@ DailyLoop <- function(cohort, tile_num, template) {
           ext <- as.data.frame(as.matrix(ext(templ)))
           # Convert matrices to rasters and put them into a raster
           # If soil moisture, have dry and wet stress products
-          if (exists("soil_moisture")) {
-          #if (soil_moisture) {
+          if (soil_moisture == 1) {
             mat_list3 <- list(coldunitsCUM, coldEXCL, heatunitsCUM,
                               heatEXCL, dryunitsCUM, dryEXCL, 
                               wetunitsCUM, wetEXCL, AllEXCL)
@@ -843,8 +841,8 @@ DailyLoop <- function(cohort, tile_num, template) {
             heatEXCL_rast <- c(heatEXCL_rast, rast_list3$heatEXCL_rast)
           }
           
-          if (exists("soil_moisture")) {
-          #if (soil_moisture) {
+          # Dry and wet stress (if applied)
+          if (soil_moisture == 1) {
             
             # Dry and wet stress unit accumulation raster
             if (!exists("dryunitsCUM_rast")) {
@@ -984,8 +982,7 @@ DailyLoop <- function(cohort, tile_num, template) {
         "All_Stress_Excl")
       
       # Append dry stress rasters to list if applied
-      if (exists("soil_moisture")) {
-     # if (soil_moisture) {
+      if (soil_moisture == 1) {
         stress_excl_rast_list <- append(
           stress_excl_rast_list, 
           c("Dry_Stress_Units" = dryunitsCUM_rast, 
@@ -1159,7 +1156,8 @@ ExtractBestPRISM <- function(files, forecast_data, keep_leap) {
                             ifelse(quality == "earl", 3, 
                             ifelse(quality == "10yr", 4, 
                             ifelse(quality == "30yr", 5, 
-                            ifelse(quality == "nmme", 6, NA)))))))
+                            ifelse(quality == "nmme", 6,
+									 ifelse(quality == "ndfd", 7, NA))))))))
   } else if (forecast_data == "NMME") {
     df <- mutate(df, rank = ifelse(quality == "stab", 1, 
                             ifelse(quality == "prov", 2, 
